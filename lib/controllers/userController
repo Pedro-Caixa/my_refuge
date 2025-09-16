@@ -1,122 +1,63 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
-
-enum TipoUsuario { aluno, colaborador, outro }
-enum MoraSozinho { sim, nao, vezes }
-enum Sexo { masculino, feminino, naoBinario, prefiroNaoInformar }
-
-class UserModel {
-  final String? id;
-  final String? email;
-  final String? senha;
-  final TipoUsuario? tipoUsuario;
-  final String? nome;
-  final String? faixaEtaria;
-  final String? profissao;
-  final MoraSozinho? moraSozinho;
-  final Sexo? sexo;
-  final String? tempoDisponivel;
-  final String? hobbies;
-
-  const UserModel({
-    this.id,
-    this.email,
-    this.senha,
-    this.tipoUsuario,
-    this.nome,
-    this.faixaEtaria,
-    this.profissao,
-    this.moraSozinho,
-    this.sexo,
-    this.tempoDisponivel,
-    this.hobbies,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'email': email,
-      'senha': senha,
-      'tipoUsuario': tipoUsuario?.name,
-      'nome': nome,
-      'faixaEtaria': faixaEtaria,
-      'profissao': profissao,
-      'moraSozinho': moraSozinho?.name,
-      'sexo': sexo?.name,
-      'tempoDisponivel': tempoDisponivel,
-      'hobbies': hobbies,
-    };
-  }
-
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      id: map['id'],
-      email: map['email'],
-      senha: map['senha'],
-      tipoUsuario: map['tipoUsuario'] != null
-          ? TipoUsuario.values.firstWhere(
-              (e) => e.name == map['tipoUsuario'],
-              orElse: () => TipoUsuario.outro,
-            )
-          : null,
-      nome: map['nome'],
-      faixaEtaria: map['faixaEtaria'],
-      profissao: map['profissao'],
-      moraSozinho: map['moraSozinho'] != null
-          ? MoraSozinho.values.firstWhere(
-              (e) => e.name == map['moraSozinho'],
-              orElse: () => MoraSozinho.nao,
-            )
-          : null,
-      sexo: map['sexo'] != null
-          ? Sexo.values.firstWhere(
-              (e) => e.name == map['sexo'],
-              orElse: () => Sexo.prefiroNaoInformar,
-            )
-          : null,
-      tempoDisponivel: map['tempoDisponivel'],
-      hobbies: map['hobbies'],
-    );
-  }
-
-  @override
-  String toString() {
-    return 'UserModel(id: $id, email: $email, nome: $nome, tipoUsuario: $tipoUsuario, faixaEtaria: $faixaEtaria, profissao: $profissao, moraSozinho: $moraSozinho, sexo: $sexo, tempoDisponivel: $tempoDisponivel, hobbies: $hobbies)';
-  }
-}
-
+import '../models/user_model.dart';
 
 class UserController extends ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
   List<UserModel> _users = [];
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
 
-
+  // Getters
   List<UserModel> get users => _users;
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _currentUser != null;
 
+  // Construtor
+  UserController() {
+    _auth.authStateChanges().listen((User? user) {
+      if (user != null) {
+        _loadCurrentUser(user.uid);
+      } else {
+        _currentUser = null;
+        notifyListeners();
+      }
+    });
+  }
+
+  Future<void> _loadCurrentUser(String uid) async {
+    try {
+      _setLoading(true);
+      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        _currentUser = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError('Erro ao carregar dados do usuário: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
 
   Future<bool> registerUser(UserModel user) async {
     try {
       _setLoading(true);
       _clearError();
 
-    
-      await Future.delayed(const Duration(seconds: 1));
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: user.email!,
+        password: user.senha!,
+      );
 
-    
-      if (_users.any((u) => u.email == user.email)) {
-        _setError('Email já cadastrado!');
-        return false;
-      }
-
-     
       final newUser = UserModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: userCredential.user?.uid,
         email: user.email,
         senha: user.senha,
         tipoUsuario: user.tipoUsuario,
@@ -129,11 +70,17 @@ class UserController extends ChangeNotifier {
         hobbies: user.hobbies,
       );
 
-      _users.add(newUser);
+      await _firestore.collection('users').doc(newUser.id).set(newUser.toMap());
       _currentUser = newUser;
       
-      print('Usuário registrado: ${newUser.toString()}');
       return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        _setError('Email já cadastrado!');
+      } else {
+        _setError('Erro ao registrar usuário: ${e.message}');
+      }
+      return false;
     } catch (e) {
       _setError('Erro ao registrar usuário: $e');
       return false;
@@ -142,25 +89,24 @@ class UserController extends ChangeNotifier {
     }
   }
 
-
   Future<bool> login(String email, String senha) async {
     try {
       _setLoading(true);
       _clearError();
 
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
 
-      await Future.delayed(const Duration(seconds: 1));
-
-          final user = _users.where((u) => u.email == email && u.senha == senha).firstOrNull;
-      
-      if (user != null) {
-        _currentUser = user;
-        print('Login realizado: ${user.toString()}');
-        return true;
-      } else {
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
         _setError('Email ou senha incorretos!');
-        return false;
+      } else {
+        _setError('Erro ao fazer login: ${e.message}');
       }
+      return false;
     } catch (e) {
       _setError('Erro ao fazer login: $e');
       return false;
@@ -169,14 +115,30 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  // Método para fazer logout
-  void logout() {
+  Future<bool> updateUser(UserModel user) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      await _firestore.collection('users').doc(user.id).update(user.toMap());
+      _currentUser = user;
+      
+      return true;
+    } catch (e) {
+      _setError('Erro ao atualizar usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void logout() async {
+    await _auth.signOut();
     _currentUser = null;
     _clearError();
     notifyListeners();
   }
 
-  // Métodos auxiliares
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
@@ -190,14 +152,5 @@ class UserController extends ChangeNotifier {
   void _clearError() {
     _errorMessage = null;
     notifyListeners();
-  }
-
-  // Método para listar todos os usuários (para debug)
-  void printAllUsers() {
-    print('\n=== USUÁRIOS CADASTRADOS ===');
-    for (int i = 0; i < _users.length; i++) {
-      print('${i + 1}. ${_users[i].toString()}');
-    }
-    print('==============================\n');
   }
 }
