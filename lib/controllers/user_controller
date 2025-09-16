@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// Seus enums e model (copiados do seu código)
+
 enum TipoUsuario { aluno, colaborador, outro }
 enum MoraSozinho { sim, nao, vezes }
 enum Sexo { masculino, feminino, naoBinario, prefiroNaoInformar }
@@ -85,36 +85,36 @@ class UserModel {
   }
 }
 
-// Controller para gerenciar os usuários
+
 class UserController extends ChangeNotifier {
   List<UserModel> _users = [];
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Getters
+
   List<UserModel> get users => _users;
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _currentUser != null;
 
-  // Método para registrar usuário
+
   Future<bool> registerUser(UserModel user) async {
     try {
       _setLoading(true);
       _clearError();
 
-      // Simular delay de API
+    
       await Future.delayed(const Duration(seconds: 1));
 
-      // Verificar se email já existe
+    
       if (_users.any((u) => u.email == user.email)) {
         _setError('Email já cadastrado!');
         return false;
       }
 
-      // Adicionar ID único
+     
       final newUser = UserModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         email: user.email,
@@ -142,17 +142,16 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  // Método para fazer login
+
   Future<bool> login(String email, String senha) async {
     try {
       _setLoading(true);
       _clearError();
 
-      // Simular delay de API
+
       await Future.delayed(const Duration(seconds: 1));
 
-      // Buscar usuário
-      final user = _users.where((u) => u.email == email && u.senha == senha).firstOrNull;
+          final user = _users.where((u) => u.email == email && u.senha == senha).firstOrNull;
       
       if (user != null) {
         _currentUser = user;
