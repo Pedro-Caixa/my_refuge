@@ -1,0 +1,204 @@
+import 'package:flutter/material.dart';
+
+// Seus enums e model (copiados do seu código)
+enum TipoUsuario { aluno, colaborador, outro }
+enum MoraSozinho { sim, nao, vezes }
+enum Sexo { masculino, feminino, naoBinario, prefiroNaoInformar }
+
+class UserModel {
+  final String? id;
+  final String? email;
+  final String? senha;
+  final TipoUsuario? tipoUsuario;
+  final String? nome;
+  final String? faixaEtaria;
+  final String? profissao;
+  final MoraSozinho? moraSozinho;
+  final Sexo? sexo;
+  final String? tempoDisponivel;
+  final String? hobbies;
+
+  const UserModel({
+    this.id,
+    this.email,
+    this.senha,
+    this.tipoUsuario,
+    this.nome,
+    this.faixaEtaria,
+    this.profissao,
+    this.moraSozinho,
+    this.sexo,
+    this.tempoDisponivel,
+    this.hobbies,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'email': email,
+      'senha': senha,
+      'tipoUsuario': tipoUsuario?.name,
+      'nome': nome,
+      'faixaEtaria': faixaEtaria,
+      'profissao': profissao,
+      'moraSozinho': moraSozinho?.name,
+      'sexo': sexo?.name,
+      'tempoDisponivel': tempoDisponivel,
+      'hobbies': hobbies,
+    };
+  }
+
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'],
+      email: map['email'],
+      senha: map['senha'],
+      tipoUsuario: map['tipoUsuario'] != null
+          ? TipoUsuario.values.firstWhere(
+              (e) => e.name == map['tipoUsuario'],
+              orElse: () => TipoUsuario.outro,
+            )
+          : null,
+      nome: map['nome'],
+      faixaEtaria: map['faixaEtaria'],
+      profissao: map['profissao'],
+      moraSozinho: map['moraSozinho'] != null
+          ? MoraSozinho.values.firstWhere(
+              (e) => e.name == map['moraSozinho'],
+              orElse: () => MoraSozinho.nao,
+            )
+          : null,
+      sexo: map['sexo'] != null
+          ? Sexo.values.firstWhere(
+              (e) => e.name == map['sexo'],
+              orElse: () => Sexo.prefiroNaoInformar,
+            )
+          : null,
+      tempoDisponivel: map['tempoDisponivel'],
+      hobbies: map['hobbies'],
+    );
+  }
+
+  @override
+  String toString() {
+    return 'UserModel(id: $id, email: $email, nome: $nome, tipoUsuario: $tipoUsuario, faixaEtaria: $faixaEtaria, profissao: $profissao, moraSozinho: $moraSozinho, sexo: $sexo, tempoDisponivel: $tempoDisponivel, hobbies: $hobbies)';
+  }
+}
+
+// Controller para gerenciar os usuários
+class UserController extends ChangeNotifier {
+  List<UserModel> _users = [];
+  UserModel? _currentUser;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // Getters
+  List<UserModel> get users => _users;
+  UserModel? get currentUser => _currentUser;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  bool get isLoggedIn => _currentUser != null;
+
+  // Método para registrar usuário
+  Future<bool> registerUser(UserModel user) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      // Simular delay de API
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Verificar se email já existe
+      if (_users.any((u) => u.email == user.email)) {
+        _setError('Email já cadastrado!');
+        return false;
+      }
+
+      // Adicionar ID único
+      final newUser = UserModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        email: user.email,
+        senha: user.senha,
+        tipoUsuario: user.tipoUsuario,
+        nome: user.nome,
+        faixaEtaria: user.faixaEtaria,
+        profissao: user.profissao,
+        moraSozinho: user.moraSozinho,
+        sexo: user.sexo,
+        tempoDisponivel: user.tempoDisponivel,
+        hobbies: user.hobbies,
+      );
+
+      _users.add(newUser);
+      _currentUser = newUser;
+      
+      print('Usuário registrado: ${newUser.toString()}');
+      return true;
+    } catch (e) {
+      _setError('Erro ao registrar usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Método para fazer login
+  Future<bool> login(String email, String senha) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      // Simular delay de API
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Buscar usuário
+      final user = _users.where((u) => u.email == email && u.senha == senha).firstOrNull;
+      
+      if (user != null) {
+        _currentUser = user;
+        print('Login realizado: ${user.toString()}');
+        return true;
+      } else {
+        _setError('Email ou senha incorretos!');
+        return false;
+      }
+    } catch (e) {
+      _setError('Erro ao fazer login: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Método para fazer logout
+  void logout() {
+    _currentUser = null;
+    _clearError();
+    notifyListeners();
+  }
+
+  // Métodos auxiliares
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String error) {
+    _errorMessage = error;
+    notifyListeners();
+  }
+
+  void _clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // Método para listar todos os usuários (para debug)
+  void printAllUsers() {
+    print('\n=== USUÁRIOS CADASTRADOS ===');
+    for (int i = 0; i < _users.length; i++) {
+      print('${i + 1}. ${_users[i].toString()}');
+    }
+    print('==============================\n');
+  }
+}
