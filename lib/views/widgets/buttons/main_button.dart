@@ -4,7 +4,7 @@ class MainButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String? text;
   final IconData? icon;
-  final List<Color>? gradientColors;
+  final List<Color> gradientColors;
   final Color? textColor;
   final double? width;
   final double height;
@@ -16,7 +16,7 @@ class MainButton extends StatelessWidget {
     this.onPressed,
     this.text,
     this.icon,
-    this.gradientColors,
+    this.gradientColors = const [Color(0xFF4AA9FF), Color(0xFF55E1D2)],
     this.textColor,
     this.width,
     this.height = 48.0,
@@ -26,23 +26,18 @@ class MainButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final defaultGradient = [
-      const Color(0xFF4AA9FF),
-      const Color(0xFF55E1D2),
-    ];
-
     return Material(
       color: Colors.transparent,
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(borderRadius),
           gradient: LinearGradient(
-            colors: gradientColors ?? defaultGradient,
+            colors: gradientColors,
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
         child: Material(
           color: Colors.transparent,
