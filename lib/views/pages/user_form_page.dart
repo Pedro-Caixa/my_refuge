@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/userModel.dart';
-import '../../controllers/userController.dart';
+import '../../controllers/user_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';

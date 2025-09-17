@@ -1,0 +1,156 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import '../models/user_model.dart';
+
+class UserController extends ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  List<UserModel> _users = [];
+  UserModel? _currentUser;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // Getters
+  List<UserModel> get users => _users;
+  UserModel? get currentUser => _currentUser;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  bool get isLoggedIn => _currentUser != null;
+
+  // Construtor
+  UserController() {
+    _auth.authStateChanges().listen((User? user) {
+      if (user != null) {
+        _loadCurrentUser(user.uid);
+      } else {
+        _currentUser = null;
+        notifyListeners();
+      }
+    });
+  }
+
+  Future<void> _loadCurrentUser(String uid) async {
+    try {
+      _setLoading(true);
+      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        _currentUser = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError('Erro ao carregar dados do usuário: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> registerUser(UserModel user) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: user.email!,
+        password: user.senha!,
+      );
+
+      final newUser = UserModel(
+        id: userCredential.user?.uid,
+        email: user.email,
+        senha: user.senha,
+        tipoUsuario: user.tipoUsuario,
+        nome: user.nome,
+        faixaEtaria: user.faixaEtaria,
+        profissao: user.profissao,
+        moraSozinho: user.moraSozinho,
+        sexo: user.sexo,
+        tempoDisponivel: user.tempoDisponivel,
+        hobbies: user.hobbies,
+      );
+
+      await _firestore.collection('users').doc(newUser.id).set(newUser.toMap());
+      _currentUser = newUser;
+      
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        _setError('Email já cadastrado!');
+      } else {
+        _setError('Erro ao registrar usuário: ${e.message}');
+      }
+      return false;
+    } catch (e) {
+      _setError('Erro ao registrar usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> login(String email, String senha) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
+
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+        _setError('Email ou senha incorretos!');
+      } else {
+        _setError('Erro ao fazer login: ${e.message}');
+      }
+      return false;
+    } catch (e) {
+      _setError('Erro ao fazer login: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> updateUser(UserModel user) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      await _firestore.collection('users').doc(user.id).update(user.toMap());
+      _currentUser = user;
+      
+      return true;
+    } catch (e) {
+      _setError('Erro ao atualizar usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void logout() async {
+    await _auth.signOut();
+    _currentUser = null;
+    _clearError();
+    notifyListeners();
+  }
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String error) {
+    _errorMessage = error;
+    notifyListeners();
+  }
+
+  void _clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+}
