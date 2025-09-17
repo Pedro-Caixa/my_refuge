@@ -34,6 +34,43 @@ class _WidgetsTestPageState extends State<WidgetsTestPage> {
             ),
             const SizedBox(height: 24),
             
+            // Navigation section to CustomButton test
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Nova Funcionalidade',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Confira o novo CustomButton widget com recursos avançados!',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 12),
+                  MainButton(
+                    text: 'Ver CustomButton',
+                    icon: Icons.arrow_forward,
+                    backgroundColor: Colors.blue,
+                    onPressed: () => Navigator.pushNamed(context, '/custom-button-test'),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 32),
+            
             // Seção 1: Botões com diferentes cores
             _buildSectionTitle('Botões com Diferentes Cores'),
             Wrap(
