@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'views/pages/widget_test_page.dart';
+import 'views/pages/user_form_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,8 +22,9 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const WidgetsTestPage(), // Página placeholder para testar widgets :D
-        // Adicionar mais paginas aqui no futuro
+        '/': (context) =>
+            const WidgetsTestPage(), // Página placeholder para testar widgets :D
+        '/inicio': (context) => const UserFormPage(),
       },
     );
   }
