@@ -9,17 +9,13 @@ class WidgetsTestPage extends StatefulWidget {
 }
 
 class _WidgetsTestPageState extends State<WidgetsTestPage> {
-  // Estados para botões toggle
-  bool isStudentSelected = false;
-  bool isCollaboratorSelected = false;
-  bool isOption1Selected = false;
-  bool isOption2Selected = false;
+  bool _isLoading = false;
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Teste de Widgets'),
+        title: const Text('Botão Animado Personalizável'),
         backgroundColor: Colors.deepPurple,
       ),
       body: SingleChildScrollView(
@@ -29,7 +25,7 @@ class _WidgetsTestPageState extends State<WidgetsTestPage> {
           children: [
             // Título da página
             const Text(
-              'Teste de Botões Reutilizáveis',
+              'Botão com Animação e Cor Personalizável',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -38,396 +34,280 @@ class _WidgetsTestPageState extends State<WidgetsTestPage> {
             ),
             const SizedBox(height: 24),
             
-            // Seção 1: Botões Primários
-            _buildSectionTitle('Botões Primários'),
+            // Seção 1: Botões com diferentes cores
+            _buildSectionTitle('Botões com Diferentes Cores'),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                // Botão primário padrão
-                 MainButton.primary(
-                  text: 'Botão Padrão',
-                  width: 150,
+                // Botão azul (padrão)
+                MainButton(
+                  text: 'Botão Azul',
+                  onPressed: () => _showSnackBar('Botão Azul pressionado!'),
                 ),
                 
-                // Botão primário com cor personalizada
-                MainButton.primary(
-                  text: 'Verde',
-                  onPressed: () {},
+                // Botão verde
+                MainButton(
+                  text: 'Botão Verde',
+                  onPressed: () => _showSnackBar('Botão Verde pressionado!'),
                   backgroundColor: Colors.green,
-                  width: 150,
                 ),
                 
-                // Botão primário com texto personalizado
-                MainButton.primary(
-                  text: 'Texto Vermelho',
-                  onPressed: () {},
-                  backgroundColor: Colors.blueGrey,
-                  textColor: Colors.red,
-                  width: 150,
-                ),
-                
-                // Botão primário grande
-                MainButton.primary(
-                  text: 'Botão Grande',
-                  onPressed: () {},
-                  width: 200,
-                  height: 60,
-                ),
-                
-                // Botão primário pequeno
-                MainButton.primary(
-                  text: 'Pequeno',
-                  onPressed: () {},
-                  width: 100,
-                  height: 40,
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Seção 2: Botões Toggle
-            _buildSectionTitle('Botões Toggle'),
-            Column(
-              children: [
-                // Exemplo de toggle único
-                MainButton.toggle(
-                  text: 'Opção Toggle',
-                  isSelected: isOption1Selected,
-                  onPressed: () {
-                    setState(() {
-                      isOption1Selected = !isOption1Selected;
-                    });
-                  },
-                  width: 200,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Exemplo de toggle em grupo (exclusivo)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    MainButton.toggle(
-                      text: 'Estudante',
-                      isSelected: isStudentSelected,
-                      onPressed: () {
-                        setState(() {
-                          isStudentSelected = !isStudentSelected;
-                          if (isStudentSelected) isCollaboratorSelected = false;
-                        });
-                      },
-                      width: 120,
-                    ),
-                    const SizedBox(width: 16),
-                    MainButton.toggle(
-                      text: 'Colaborador',
-                      isSelected: isCollaboratorSelected,
-                      onPressed: () {
-                        setState(() {
-                          isCollaboratorSelected = !isCollaboratorSelected;
-                          if (isCollaboratorSelected) isStudentSelected = false;
-                        });
-                      },
-                      width: 120,
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Exemplo de toggle múltiplo
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    MainButton.toggle(
-                      text: 'Opção 1',
-                      isSelected: isOption1Selected,
-                      onPressed: () {
-                        setState(() {
-                          isOption1Selected = !isOption1Selected;
-                        });
-                      },
-                      width: 100,
-                    ),
-                    const SizedBox(width: 16),
-                    MainButton.toggle(
-                      text: 'Opção 2',
-                      isSelected: isOption2Selected,
-                      onPressed: () {
-                        setState(() {
-                          isOption2Selected = !isOption2Selected;
-                        });
-                      },
-                      width: 100,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Seção 3: Botões com Gradiente
-            _buildSectionTitle('Botões com Gradiente'),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                // Gradiente azul para verde
+                // Botão vermelho
                 MainButton(
-                  text: 'Azul-Verde',
-                  onPressed: () {},
-                  gradient: const LinearGradient(
-                    colors: [Colors.blue, Colors.green],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  width: 150,
-                ),
-                
-                // Gradiente vermelho para amarelo
-                MainButton(
-                  text: 'Vermelho-Amarelo',
-                  onPressed: () {},
-                  gradient: const LinearGradient(
-                    colors: [Colors.red, Colors.yellow],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  width: 150,
-                ),
-                
-                // Gradiente roxo para rosa
-                MainButton(
-                  text: 'Roxo-Rosa',
-                  onPressed: () {},
-                  gradient: const LinearGradient(
-                    colors: [Colors.purple, Colors.pink],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  width: 150,
-                ),
-                
-                // Gradiente com ícone
-                MainButton(
-                  text: 'Com Ícone',
-                  icon: Icons.star,
-                  onPressed: () {},
-                  gradient: const LinearGradient(
-                    colors: [Colors.teal, Colors.cyan],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  width: 150,
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Seção 4: Botões apenas com Ícone
-            _buildSectionTitle('Botões apenas com Ícone'),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                // Ícone padrão
-                MainButton.iconOnly(
-                  icon: Icons.add,
-                ),
-                
-                // Ícone com cor personalizada
-                MainButton.iconOnly(
-                  icon: Icons.favorite,
+                  text: 'Botão Vermelho',
+                  onPressed: () => _showSnackBar('Botão Vermelho pressionado!'),
                   backgroundColor: Colors.red,
-                  iconColor: Colors.white,
-                  onPressed: () {},
                 ),
                 
-                // Ícone grande
-                MainButton.iconOnly(
-                  icon: Icons.home,
-                  backgroundColor: Colors.green,
-                  size: 60,
-                  iconSize: 32,
-                  onPressed: () {},
-                ),
-                
-                // Ícone pequeno
-                MainButton.iconOnly(
-                  icon: Icons.search,
+                // Botão amarelo
+                MainButton(
+                  text: 'Botão Amarelo',
+                  onPressed: () => _showSnackBar('Botão Amarelo pressionado!'),
                   backgroundColor: Colors.amber,
-                  size: 36,
-                  iconSize: 18,
-                  onPressed: () {},
+                  textColor: Colors.black,
                 ),
                 
-                // Ícone redondo
-                MainButton.iconOnly(
-                  icon: Icons.settings,
+                // Botão roxo
+                MainButton(
+                  text: 'Botão Roxo',
+                  onPressed: () => _showSnackBar('Botão Roxo pressionado!'),
                   backgroundColor: Colors.purple,
-                  size: 50,
-                  onPressed: () {},
+                ),
+                
+                // Botão laranja
+                MainButton(
+                  text: 'Botão Laranja',
+                  onPressed: () => _showSnackBar('Botão Laranja pressionado!'),
+                  backgroundColor: Colors.orange,
                 ),
               ],
             ),
             
             const SizedBox(height: 32),
             
-            // Seção 5: Botões apenas com Texto
-            _buildSectionTitle('Botões apenas com Texto'),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Texto padrão
-                MainButton.textOnly(
-                  text: 'Botão de Texto Padrão',
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Texto com cor personalizada
-                MainButton.textOnly(
-                  text: 'Texto Vermelho',
-                  textColor: Colors.red,
-                  onPressed: () {},
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Texto grande
-                MainButton.textOnly(
-                  text: 'Texto Grande',
-                  textColor: Colors.blue,
-                  textSize: 20,
-                  onPressed: () {},
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Texto pequeno
-                MainButton.textOnly(
-                  text: 'Texto Pequeno',
-                  textColor: Colors.green,
-                  textSize: 12,
-                  onPressed: () {},
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Texto com negrito
-                MainButton.textOnly(
-                  text: 'Texto em Negrito',
-                  textColor: Colors.purple,
-                  textSize: 16,
-                  onPressed: () {},
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Seção 6: Botões com Ícone e Texto
-            _buildSectionTitle('Botões com Ícone e Texto'),
+            // Seção 2: Botões com diferentes tamanhos
+            _buildSectionTitle('Botões com Diferentes Tamanhos'),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                // Padrão
-                 MainButton.iconText(
-                  text: 'Perfil',
-                  icon: Icons.person,
-                  width: 150,
+                // Botão pequeno
+                MainButton(
+                  text: 'Pequeno',
+                  onPressed: () => _showSnackBar('Botão Pequeno pressionado!'),
+                  width: 100,
+                  height: 36,
+                  textSize: 14,
                 ),
                 
-                // Com cor personalizada
-                MainButton.iconText(
-                  text: 'Configurações',
-                  icon: Icons.settings,
-                  onPressed: () {},
-                  backgroundColor: Colors.orange,
-                  width: 150,
-                ),
-                
-                // Ícone e texto com cores diferentes
-                MainButton.iconText(
-                  text: 'Notificações',
-                  icon: Icons.notifications,
-                  onPressed: () {},
-                  backgroundColor: Colors.blue,
-                  textColor: Colors.yellow,
-                  iconColor: Colors.white,
-                  width: 150,
+                // Botão médio (padrão)
+                MainButton(
+                  text: 'Médio',
+                  onPressed: () => _showSnackBar('Botão Médio pressionado!'),
                 ),
                 
                 // Botão grande
-                MainButton.iconText(
-                  text: 'Download',
-                  icon: Icons.download,
-                  onPressed: () {},
-                  backgroundColor: Colors.teal,
-                  width: 180,
+                MainButton(
+                  text: 'Grande',
+                  onPressed: () => _showSnackBar('Botão Grande pressionado!'),
+                  width: 200,
                   height: 60,
+                  textSize: 20,
                 ),
                 
-                // Botão pequeno
-                MainButton.iconText(
-                  text: 'Compartilhar',
-                  icon: Icons.share,
-                  onPressed: () {},
-                  backgroundColor: Colors.indigo,
-                  width: 120,
-                  height: 40,
+                // Botão extra grande
+                MainButton(
+                  text: 'Extra Grande',
+                  onPressed: () => _showSnackBar('Botão Extra Grande pressionado!'),
+                  width: 250,
+                  height: 70,
+                  textSize: 24,
                 ),
               ],
             ),
             
             const SizedBox(height: 32),
             
-            // Seção 7: Botões Desabilitados
+            // Seção 3: Botões com ícones
+            _buildSectionTitle('Botões com Ícones'),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                // Botão com ícone de adição
+                MainButton(
+                  text: 'Adicionar',
+                  onPressed: () => _showSnackBar('Botão Adicionar pressionado!'),
+                  icon: Icons.add,
+                ),
+                
+                // Botão com ícone de salvar
+                MainButton(
+                  text: 'Salvar',
+                  onPressed: () => _showSnackBar('Botão Salvar pressionado!'),
+                  icon: Icons.save,
+                  backgroundColor: Colors.green,
+                ),
+                
+                // Botão com ícone de delete
+                MainButton(
+                  text: 'Excluir',
+                  onPressed: () => _showSnackBar('Botão Excluir pressionado!'),
+                  icon: Icons.delete,
+                  backgroundColor: Colors.red,
+                ),
+                
+                // Botão com ícone de download
+                MainButton(
+                  text: 'Download',
+                  onPressed: () => _showSnackBar('Botão Download pressionado!'),
+                  icon: Icons.download,
+                  backgroundColor: Colors.blue,
+                ),
+                
+                // Botão com ícone de compartilhar
+                MainButton(
+                  text: 'Compartilhar',
+                  onPressed: () => _showSnackBar('Botão Compartilhar pressionado!'),
+                  icon: Icons.share,
+                  backgroundColor: Colors.purple,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Seção 4: Botões com diferentes bordas arredondadas
+            _buildSectionTitle('Botões com Diferentes Bordas Arredondadas'),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                // Botão com borda quadrada
+                MainButton(
+                  text: 'Quadrado',
+                  onPressed: () => _showSnackBar('Botão Quadrado pressionado!'),
+                  borderRadius: 0,
+                ),
+                
+                // Botão com borda levemente arredondada
+                MainButton(
+                  text: 'Levemente Arredondado',
+                  onPressed: () => _showSnackBar('Botão Levemente Arredondado pressionado!'),
+                  borderRadius: 4,
+                ),
+                
+                // Botão com borda arredondada padrão
+                MainButton(
+                  text: 'Arredondado',
+                  onPressed: () => _showSnackBar('Botão Arredondado pressionado!'),
+                  borderRadius: 8,
+                ),
+                
+                // Botão com borda muito arredondada
+                MainButton(
+                  text: 'Muito Arredondado',
+                  onPressed: () => _showSnackBar('Botão Muito Arredondado pressionado!'),
+                  borderRadius: 16,
+                ),
+                
+                // Botão com borda completamente arredondada
+                MainButton(
+                  text: 'Completamente Arredondado',
+                  onPressed: () => _showSnackBar('Botão Completamente Arredondado pressionado!'),
+                  borderRadius: 30,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Seção 5: Botões com estado de carregamento
+            _buildSectionTitle('Botões com Estado de Carregamento'),
+            Column(
+              children: [
+                MainButton(
+                  text: _isLoading ? 'Carregando...' : 'Simular Carregamento',
+                  onPressed: _isLoading ? null : _simulateLoading,
+                  isLoading: _isLoading,
+                  backgroundColor: Colors.teal,
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Botão com carregamento e ícone
+                MainButton(
+                  text: _isLoading ? 'Enviando...' : 'Enviar Dados',
+                  onPressed: _isLoading ? null : _simulateLoading,
+                  icon: Icons.send,
+                  isLoading: _isLoading,
+                  backgroundColor: Colors.indigo,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Seção 6: Botões desabilitados
             _buildSectionTitle('Botões Desabilitados'),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                // Botão primário desabilitado
-                 MainButton.primary(
+                // Botão desabilitado simples
+                const MainButton(
                   text: 'Desabilitado',
                   onPressed: null,
-                  width: 150,
                 ),
                 
-                // Botão toggle desabilitado
-                 MainButton.toggle(
+                // Botão desabilitado com ícone
+                const MainButton(
                   text: 'Desabilitado',
-                  isSelected: false,
                   onPressed: null,
-                  width: 150,
-                ),
-                
-                // Botão de ícone desabilitado
-                 MainButton.iconOnly(
                   icon: Icons.block,
-                  onPressed: null,
+                  backgroundColor: Colors.red,
                 ),
                 
-                // Botão de texto desabilitado
-                 MainButton.textOnly(
+                // Botão desabilitado grande
+                const MainButton(
                   text: 'Desabilitado',
                   onPressed: null,
-                ),
-                
-                // Botão com ícone e texto desabilitado
-                 MainButton.iconText(
-                  text: 'Desabilitado',
-                  icon: Icons.not_interested,
-                  onPressed: null,
-                  width: 150,
+                  width: 200,
+                  height: 60,
+                  backgroundColor: Colors.green,
                 ),
               ],
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Seção 7: Demonstração de animação
+            _buildSectionTitle('Demonstração de Animação'),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Pressione e segure o botão para ver a animação:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: MainButton(
+                      text: 'Pressione e Segure',
+                      onPressed: () => _showSnackBar('Animação demonstrada!'),
+                      backgroundColor: Colors.deepPurple,
+                      width: 200,
+                    ),
+                  ),
+                ],
+              ),
             ),
             
             const SizedBox(height: 40),
@@ -450,5 +330,33 @@ class _WidgetsTestPageState extends State<WidgetsTestPage> {
         ),
       ),
     );
+  }
+  
+  // Método para mostrar um SnackBar quando um botão é pressionado
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 1),
+        backgroundColor: Colors.deepPurple,
+      ),
+    );
+  }
+  
+  // Método para simular um carregamento
+  void _simulateLoading() {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    // Simula uma operação que leva 3 segundos
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showSnackBar('Operação concluída!');
+      }
+    });
   }
 }
