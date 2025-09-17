@@ -1,82 +1,59 @@
 import 'package:flutter/material.dart';
 
-class MainButton extends StatefulWidget {
-  final String text;
+class MainButton extends StatelessWidget {
   final VoidCallback? onPressed;
-  final Color backgroundColor;
+  final String? text;
+  final IconData? icon;
+  final List<Color>? gradientColors;
   final Color? textColor;
   final double? width;
-  final double? height;
+  final double height;
   final double borderRadius;
   final EdgeInsetsGeometry padding;
-  final double textSize;
-  final FontWeight fontWeight;
-  final IconData? icon;
-  final bool isLoading;
-  final double elevation;
-  final double disabledElevation;
 
   const MainButton({
     Key? key,
-    required this.text,
     this.onPressed,
-    this.backgroundColor = Colors.blue,
+    this.text,
+    this.icon,
+    this.gradientColors,
     this.textColor,
     this.width,
-    this.height,
+    this.height = 48.0,
     this.borderRadius = 8.0,
-    this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-    this.textSize = 16.0,
-    this.fontWeight = FontWeight.w600,
-    this.icon,
-    this.isLoading = false,
-    this.elevation = 4.0,
-    this.disabledElevation = 0.0,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
   }) : super(key: key);
 
   @override
-  State<MainButton> createState() => _MainButtonState();
-}
-
-class _MainButtonState extends State<MainButton> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final bool isEnabled = widget.onPressed != null && !widget.isLoading;
-    final Color effectiveTextColor = widget.textColor ?? 
-        (widget.backgroundColor.computeLuminance() > 0.5 ? Colors.black : Colors.white);
+    final defaultGradient = [
+      const Color(0xFF4AA9FF),
+      const Color(0xFF55E1D2),
+    ];
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      width: widget.width,
-      height: widget.height,
-      decoration: BoxDecoration(
-        color: isEnabled ? widget.backgroundColor : Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(widget.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: _isPressed ? 2 : widget.elevation,
-            offset: _isPressed ? const Offset(0, 1) : const Offset(0, 2),
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          gradient: LinearGradient(
+            colors: gradientColors ?? defaultGradient,
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isEnabled ? widget.onPressed : null,
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          splashColor: Colors.white.withOpacity(0.3),
-          highlightColor: Colors.white.withOpacity(0.1),
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) => setState(() => _isPressed = false),
-          onTapCancel: () => setState(() => _isPressed = false),
-          child: Padding(
-            padding: widget.padding,
-            child: Center(
-              child: _buildContent(effectiveTextColor),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(borderRadius),
+            onTap: onPressed,
+            child: Padding(
+              padding: padding,
+              child: Center(
+                child: _buildContent(Theme.of(context)),
+              ),
             ),
           ),
         ),
@@ -84,38 +61,42 @@ class _MainButtonState extends State<MainButton> {
     );
   }
 
-  Widget _buildContent(Color textColor) {
-    if (widget.isLoading) {
-      return SizedBox(
-        height: widget.textSize + 8,
-        width: widget.textSize + 8,
-        child: CircularProgressIndicator(
-          strokeWidth: 2.0,
-          valueColor: AlwaysStoppedAnimation<Color>(textColor),
+  Widget _buildContent(ThemeData theme) {
+    if (icon != null && text != null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: textColor ?? Colors.white,
+            size: 24,
+          ),
+          SizedBox(width: 8),
+          Text(
+            text!,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: textColor ?? Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      );
+    } else if (icon != null) {
+      return Icon(
+        icon,
+        color: textColor ?? Colors.white,
+        size: 24,
+      );
+    } else if (text != null) {
+      return Text(
+        text!,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: textColor ?? Colors.white,
+          fontWeight: FontWeight.bold,
         ),
       );
     }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (widget.icon != null) ...[
-          Icon(
-            widget.icon,
-            color: textColor,
-            size: widget.textSize + 4,
-          ),
-          const SizedBox(width: 8),
-        ],
-        Text(
-          widget.text,
-          style: TextStyle(
-            color: textColor,
-            fontSize: widget.textSize,
-            fontWeight: widget.fontWeight,
-          ),
-        ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
 }
