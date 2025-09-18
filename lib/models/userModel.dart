@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum TipoUsuario { aluno, colaborador, outro }
 
 enum MoraSozinho { sim, nao, vezes }
@@ -16,6 +18,8 @@ class UserModel {
   final Sexo? sexo;
   final String? tempoDisponivel;
   final String? hobbies;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const UserModel({
     this.id,
@@ -29,7 +33,41 @@ class UserModel {
     this.sexo,
     this.tempoDisponivel,
     this.hobbies,
+    this.createdAt,
+    this.updatedAt,
   });
+
+  UserModel copyWith({
+    String? id,
+    String? email,
+    String? senha,
+    TipoUsuario? tipoUsuario,
+    String? nome,
+    String? faixaEtaria,
+    String? profissao,
+    MoraSozinho? moraSozinho,
+    Sexo? sexo,
+    String? tempoDisponivel,
+    String? hobbies,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      senha: senha ?? this.senha,
+      tipoUsuario: tipoUsuario ?? this.tipoUsuario,
+      nome: nome ?? this.nome,
+      faixaEtaria: faixaEtaria ?? this.faixaEtaria,
+      profissao: profissao ?? this.profissao,
+      moraSozinho: moraSozinho ?? this.moraSozinho,
+      sexo: sexo ?? this.sexo,
+      tempoDisponivel: tempoDisponivel ?? this.tempoDisponivel,
+      hobbies: hobbies ?? this.hobbies,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -44,6 +82,8 @@ class UserModel {
       'sexo': sexo?.name,
       'tempoDisponivel': tempoDisponivel,
       'hobbies': hobbies,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 
@@ -75,10 +115,22 @@ class UserModel {
           : null,
       tempoDisponivel: map['tempoDisponivel'],
       hobbies: map['hobbies'],
+
+      createdAt: map['createdAt'] != null
+          ? (map['createdAt'] is Timestamp
+                ? (map['createdAt'] as Timestamp).toDate()
+                : map['createdAt'] as DateTime?)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? (map['updatedAt'] is Timestamp
+                ? (map['updatedAt'] as Timestamp).toDate()
+                : map['updatedAt'] as DateTime?)
+          : null,
     );
   }
+
   @override
   String toString() {
-    return 'UserModel(id: $id, email: $email, nome: $nome, tipoUsuario: $tipoUsuario, faixaEtaria: $faixaEtaria, profissao: $profissao, moraSozinho: $moraSozinho, sexo: $sexo, tempoDisponivel: $tempoDisponivel, hobbies: $hobbies)';
+    return 'UserModel(id: $id, email: $email, nome: $nome, tipoUsuario: $tipoUsuario, faixaEtaria: $faixaEtaria, profissao: $profissao, moraSozinho: $moraSozinho, sexo: $sexo, tempoDisponivel: $tempoDisponivel, hobbies: $hobbies, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }

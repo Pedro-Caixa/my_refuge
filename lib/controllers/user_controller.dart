@@ -68,7 +68,7 @@ class UserController extends ChangeNotifier {
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: user.email!, password: senha);
 
-      // ✅ SEGURO: Criar usuário SEM a senha para o Firestore
+      // ✅ CORRIGIDO: Criar usuário SEM a senha para o Firestore
       final newUser = UserModel(
         id: userCredential.user?.uid,
         email: user.email,
@@ -81,11 +81,14 @@ class UserController extends ChangeNotifier {
         sexo: user.sexo,
         tempoDisponivel: user.tempoDisponivel,
         hobbies: user.hobbies,
-        createdAt: Timestamp.fromDate(DateTime.now()), // Adicionar timestamp
       );
 
-      // Salvar no Firestore (sem senha)
-      await _firestore.collection('users').doc(newUser.id).set(newUser.toMap());
+      // Salvar no Firestore (sem senha) + timestamps
+      Map<String, dynamic> userData = newUser.toMap();
+      userData.remove('senha'); // Garantir que a senha não seja salva
+      userData['createdAt'] = FieldValue.serverTimestamp();
+
+      await _firestore.collection('users').doc(newUser.id).set(userData);
       _currentUser = newUser;
 
       return true;
@@ -140,15 +143,17 @@ class UserController extends ChangeNotifier {
         return false;
       }
 
-      // Adicionar timestamp de atualização
-      final updatedUser = user.copyWith(updatedAt: DateTime.now());
+      // ✅ CORRIGIDO: Atualizar dados + timestamp
+      Map<String, dynamic> updateData = user.toMap();
+      updateData.remove(
+        'senha',
+      ); // Garantir que a senha não seja atualizada aqui
+      updateData['updatedAt'] = FieldValue.serverTimestamp();
 
-      await _firestore
-          .collection('users')
-          .doc(user.id)
-          .update(updatedUser.toMap());
+      await _firestore.collection('users').doc(user.id).update(updateData);
 
-      _currentUser = updatedUser;
+      // Recarregar os dados do usuário atual
+      await _loadCurrentUser(user.id!);
 
       return true;
     } catch (e) {
