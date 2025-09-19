@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "897560463762",
+    "project_id": "aula-298d6",
+    "storage_bucket": "aula-298d6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:897560463762:android:0e46a5b7c3b5df81f5d94b",
+        "android_client_info": {
+          "package_name": "com.example.my_refuge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbxq7ceEyvEiugigj7KFqpDyidjGfQfv8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
