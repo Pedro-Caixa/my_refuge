@@ -12,14 +12,12 @@ class UserController extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Getters
   List<UserModel> get users => _users;
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _currentUser != null;
 
-  // Construtor
   UserController() {
     _auth.authStateChanges().listen((User? user) {
       if (user != null) {
@@ -53,7 +51,6 @@ class UserController extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      // Validações
       if (!_isValidEmail(user.email ?? '')) {
         _setError('Email inválido!');
         return false;
@@ -64,15 +61,13 @@ class UserController extends ChangeNotifier {
         return false;
       }
 
-      // Criar usuário no Firebase Auth
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: user.email!, password: senha);
 
-      // ✅ CORRIGIDO: Criar usuário SEM a senha para o Firestore
       final newUser = UserModel(
         id: userCredential.user?.uid,
         email: user.email,
-        // senha: REMOVIDO - nunca salvar senha no Firestore
+
         tipoUsuario: user.tipoUsuario,
         nome: user.nome,
         faixaEtaria: user.faixaEtaria,
@@ -83,9 +78,8 @@ class UserController extends ChangeNotifier {
         hobbies: user.hobbies,
       );
 
-      // Salvar no Firestore (sem senha) + timestamps
       Map<String, dynamic> userData = newUser.toMap();
-      userData.remove('senha'); // Garantir que a senha não seja salva
+      userData.remove('senha');
       userData['createdAt'] = FieldValue.serverTimestamp();
 
       await _firestore.collection('users').doc(newUser.id).set(userData);
@@ -108,7 +102,6 @@ class UserController extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      // Validações básicas
       if (!_isValidEmail(email)) {
         _setError('Email inválido!');
         return false;
@@ -143,16 +136,12 @@ class UserController extends ChangeNotifier {
         return false;
       }
 
-      // ✅ CORRIGIDO: Atualizar dados + timestamp
       Map<String, dynamic> updateData = user.toMap();
-      updateData.remove(
-        'senha',
-      ); // Garantir que a senha não seja atualizada aqui
+      updateData.remove('senha');
       updateData['updatedAt'] = FieldValue.serverTimestamp();
 
       await _firestore.collection('users').doc(user.id).update(updateData);
 
-      // Recarregar os dados do usuário atual
       await _loadCurrentUser(user.id!);
 
       return true;
@@ -164,7 +153,6 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  // ✅ Função para alterar senha
   Future<bool> changePassword(
     String currentPassword,
     String newPassword,
@@ -184,7 +172,6 @@ class UserController extends ChangeNotifier {
         return false;
       }
 
-      // Reautenticar usuário
       final credential = EmailAuthProvider.credential(
         email: user.email!,
         password: currentPassword,
@@ -192,7 +179,6 @@ class UserController extends ChangeNotifier {
 
       await user.reauthenticateWithCredential(credential);
 
-      // Alterar senha
       await user.updatePassword(newPassword);
 
       return true;
@@ -241,7 +227,6 @@ class UserController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ Validações
   bool _isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
@@ -250,7 +235,6 @@ class UserController extends ChangeNotifier {
     return password.length >= 6;
   }
 
-  // ✅ Tratamento centralizado de erros
   void _handleAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'email-already-in-use':
