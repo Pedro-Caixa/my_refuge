@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// Importando as telas da pasta 'screens'
-import 'screens/frases_page.dart';
-import 'screens/home_page.dart';
-import 'screens/humor_page.dart';
-import 'screens/exercicios_page.dart';
-import 'screens/login_page.dart';
-import 'screens/register_page.dart';
 
-// Importa o modelo de dados de registro
-import 'screens/register_page.dart';
+import 'views/pages/frases_page.dart';
+import 'views/pages/home_page.dart';
+import 'views/pages/humor_page.dart';
+import 'views/pages/exercicios_page.dart';
+import 'views/pages/login_page.dart';
+import 'views/pages/register_page.dart';
+
+import 'views/pages/register_page.dart';
 
 void main() {
   runApp(
