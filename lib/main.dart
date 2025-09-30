@@ -1,28 +1,44 @@
 import 'package:flutter/material.dart';
-import 'views/pages/widget_test_page.dart';
+import 'package:provider/provider.dart';
+
+import 'views/pages/frases_page.dart';
+import 'views/pages/home_page.dart';
+import 'views/pages/humor_page.dart';
+import 'views/pages/exercicios_page.dart';
+import 'views/pages/login_page.dart';
+import 'views/pages/register_page.dart';
+
+import 'views/pages/register_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => RegistrationData(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Refuge',
       debugShowCheckedModeBanner: false,
+      title: 'My Refuge',
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-        fontFamily: 'Poppins',
+        primarySwatch: Colors.teal,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      initialRoute: '/',
+      initialRoute: '/login',
       routes: {
-        '/': (context) => const WidgetsTestPage(), // Página placeholder para testar widgets :D
-        // Adicionar mais paginas aqui no futuro
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterPage(),
+        '/home': (context) => const HomePage(),
+        '/humor': (context) => const CheckInPage(),
+        '/exercicios': (context) => const ExerciciosPage(),
+        '/frases': (context) => const MotivationalPage(),
       },
     );
   }
