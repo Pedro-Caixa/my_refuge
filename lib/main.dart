@@ -1,37 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // arquivo gerado pelo flutterfire configure
-import 'views/pages/widget_test_page.dart';
-import 'views/pages/user_form_page.dart';
+import 'package:provider/provider.dart';
+// Importando as telas da pasta 'screens'
+import 'screens/frases_page.dart';
+import 'screens/home_page.dart';
+import 'screens/humor_page.dart';
+import 'screens/exercicios_page.dart';
+import 'screens/login_page.dart';
+import 'screens/register_page.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+// Importa o modelo de dados de registro
+import 'screens/register_page.dart';
 
-  // Inicializa o Firebase com as opções da plataforma atual
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  runApp(const MyApp());
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => RegistrationData(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Refuge',
       debugShowCheckedModeBanner: false,
+      title: 'My Refuge',
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-        fontFamily: 'Poppins',
+        primarySwatch: Colors.teal,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      initialRoute: '/',
+      initialRoute: '/login',
       routes: {
-        '/': (context) =>
-            const WidgetsTestPage(), // Página placeholder para testar widgets :D
-        '/inicio': (context) => const UserFormPage(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterPage(),
+        '/home': (context) => const HomePage(),
+        '/humor': (context) => const CheckInPage(),
+        '/exercicios': (context) => const ExerciciosPage(),
+        '/frases': (context) => const MotivationalPage(),
       },
     );
   }
