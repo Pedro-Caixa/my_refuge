@@ -10,6 +10,8 @@ class MainButton extends StatelessWidget {
   final double height;
   final double borderRadius;
   final EdgeInsetsGeometry padding;
+  final Widget? child;
+  final bool isLoading;
 
   const MainButton({
     Key? key,
@@ -22,6 +24,8 @@ class MainButton extends StatelessWidget {
     this.height = 48.0,
     this.borderRadius = 8.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
+    this.child,
+    this.isLoading = false,
   }) : super(key: key);
 
   @override
@@ -57,6 +61,20 @@ class MainButton extends StatelessWidget {
   }
 
   Widget _buildContent(ThemeData theme) {
+    if (isLoading) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
+      );
+    }
+
+    if (child != null) {
+      return child!;
+    }
+
     if (icon != null && text != null) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -67,7 +85,7 @@ class MainButton extends StatelessWidget {
             color: textColor ?? Colors.white,
             size: 24,
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Text(
             text!,
             style: theme.textTheme.bodyLarge?.copyWith(

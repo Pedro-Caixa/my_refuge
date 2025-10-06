@@ -1,49 +1,41 @@
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Daily Check-in App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const CheckInPage(),
-      routes: {'/humor': (context) => const CheckInPage()},
-    );
-  }
-}
+import '../template/main_template.dart';
+import '../widgets/sections/emotion_selector.dart';
+import '../widgets/sections/note_input.dart';
+import '../widgets/sections/history_card.dart';
+import '../widgets/buttons/save_button.dart';
+import '../widgets/sections/custom_footer.dart';
 
 class CheckInPage extends StatelessWidget {
   const CheckInPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MainTemplate(
+      title: "Check-in Diário",
+      currentIndex: 0,
+      onItemTapped: (int index) {
+        if (index == 0) {
+          Navigator.pushNamed(context, '/humor');
+        } else if (index == 1) {
+          // Navigator.pushNamed(context, '/resumos');
+        }
+
+        // Corrigido: alterado de 'customBottomNavigationBar' para 'bottomNavigationBa
+      },
       backgroundColor: const Color(0xFFE8F2F9),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFE8F2F9),
-        elevation: 0,
-        title: const Text(
-          "Check-in Diário",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () {
-            // Ação de retorno para a tela anterior
-            Navigator.of(context).pop();
-          },
-        ),
+      transparentAppBar: true,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black87),
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+      ),
+      customBottomNavigationBar: CustomFooter(
+        currentIndex: 0,
+        onItemTapped: (int index) {
+          // Lógica adicional se necessário
+        },
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -55,53 +47,11 @@ class CheckInPage extends StatelessWidget {
               style: TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  _buildEmotion("😊", "Feliz"),
-                  _buildEmotion("😐", "Indiferente"),
-                  _buildEmotion("😢", "Triste"),
-                  _buildEmotion("😠", "Irritado"),
-                  _buildEmotion("😰", "Ansioso"),
-                ],
-              ),
-            ),
+            const EmotionSelector(),
             const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "O que aconteceu hoje? (Opcional)",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: "Compartilhe algo sobre o seu dia...",
-                      hintStyle: const TextStyle(color: Colors.black38),
-                      filled: true,
-                      fillColor: const Color(0xFFF8F9FB),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            const NoteInput(
+              labelText: "O que aconteceu hoje? (Opcional)",
+              hintText: "Compartilhe algo sobre o seu dia...",
             ),
             const SizedBox(height: 20),
             const Text(
@@ -109,118 +59,32 @@ class CheckInPage extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            _buildHistoryCard(
-              "Ontem",
-              "Bem",
-              Icons.favorite_border,
-              Colors.green.shade400,
+            const HistoryCard(
+              day: "Ontem",
+              status: "Bem",
+              icon: Icons.favorite_border,
+              color: Colors.green,
             ),
-            _buildHistoryCard(
-              "Anteontem",
-              "Excelente",
-              Icons.sentiment_satisfied,
-              Colors.green.shade600,
+            const HistoryCard(
+              day: "Anteontem",
+              status: "Excelente",
+              icon: Icons.sentiment_satisfied,
+              color: Colors.green,
             ),
             const SizedBox(height: 30),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9C6BFF),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 14,
+            SaveButton(
+              onPressed: () {
+                // Lógica para salvar o check-in
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Check-in salvo com sucesso!'),
+                    backgroundColor: Colors.green,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                icon: const Icon(Icons.save, color: Colors.white),
-                label: const Text(
-                  "Salvar",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        currentIndex: 0,
-        onTap: (int index) {
-          if (index == 0) {
-            Navigator.pushNamed(context, '/humor');
-          } else if (index == 1) {
-            // Navigator.pushNamed(context, '/resumos');
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: "Check-in",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_chart_outlined),
-            label: "Resumos",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.lightbulb_outline),
-            label: "Motivações",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: "Relatórios",
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmotion(String emoji, String label) {
-    return Column(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 28)),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
-
-  Widget _buildHistoryCard(
-    String day,
-    String status,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(day, style: const TextStyle(color: Colors.black54)),
-              Text(
-                status,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

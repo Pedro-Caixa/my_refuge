@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../models/user_model.dart';
+import '../../models/registration_data.dart';
 import '../../controllers/user_controller.dart';
 import 'package:provider/provider.dart';
+import '../widgets/inputs/email_input_form.dart';
+import '../widgets/inputs/password_input_form.dart';
+import '../widgets/inputs/text_input_form.dart';
+import '../widgets/inputs/dropdown_input_form.dart';
+import '../widgets/buttons/main_button.dart';
+import '../template/main_template.dart';
 
 class UserFormPage extends StatefulWidget {
-  final UserModel? user;
+  final RegistrationData? registrationData;
 
-  const UserFormPage({Key? key, this.user}) : super(key: key);
+  const UserFormPage({Key? key, this.registrationData}) : super(key: key);
 
   @override
   _UserFormPageState createState() => _UserFormPageState();
@@ -18,15 +24,17 @@ class _UserFormPageState extends State<UserFormPage> {
 
   late TextEditingController _emailController;
   late TextEditingController _senhaController;
+  late TextEditingController _confirmSenhaController;
   late TextEditingController _nomeController;
   late TextEditingController _faixaEtariaController;
   late TextEditingController _profissaoController;
   late TextEditingController _tempoDisponivelController;
   late TextEditingController _hobbiesController;
 
-  TipoUsuario? _tipoUsuario;
-  MoraSozinho? _moraSozinho;
-  Sexo? _sexo;
+  String _userType = 'paciente';
+  String _livesAlone = 'nao';
+  String _gender = 'masc';
+  bool _receivesNotifications = true;
 
   bool _isEditing = false;
   bool _isLoading = false;
@@ -34,37 +42,37 @@ class _UserFormPageState extends State<UserFormPage> {
   @override
   void initState() {
     super.initState();
-    _isEditing = widget.user != null;
+    _isEditing = widget.registrationData != null;
 
-    // Inicializar controllers com valores do usuário se existir
-    _emailController = TextEditingController(text: widget.user?.email ?? '');
-    _senhaController = TextEditingController(
-      text: '',
-    ); // Nunca preencher a senha existente
-    _nomeController = TextEditingController(text: widget.user?.nome ?? '');
-    _faixaEtariaController = TextEditingController(
-      text: widget.user?.faixaEtaria ?? '',
-    );
-    _profissaoController = TextEditingController(
-      text: widget.user?.profissao ?? '',
-    );
+    // Inicializar controllers com valores do registrationData se existir
+    _emailController =
+        TextEditingController(text: widget.registrationData?.email ?? '');
+    _senhaController = TextEditingController(text: '');
+    _confirmSenhaController = TextEditingController(text: '');
+    _nomeController =
+        TextEditingController(text: widget.registrationData?.name ?? '');
+    _faixaEtariaController =
+        TextEditingController(text: widget.registrationData?.ageRange ?? '');
+    _profissaoController =
+        TextEditingController(text: widget.registrationData?.profession ?? '');
     _tempoDisponivelController = TextEditingController(
-      text: widget.user?.tempoDisponivel ?? '',
-    );
-    _hobbiesController = TextEditingController(
-      text: widget.user?.hobbies ?? '',
-    );
+        text: widget.registrationData?.availableTime ?? '');
+    _hobbiesController =
+        TextEditingController(text: widget.registrationData?.hobbies ?? '');
 
-    // Inicializar enums com valores do usuário se existir
-    _tipoUsuario = widget.user?.tipoUsuario;
-    _moraSozinho = widget.user?.moraSozinho;
-    _sexo = widget.user?.sexo;
+    // Inicializar variáveis com valores do registrationData se existir
+    _userType = widget.registrationData?.userType ?? 'paciente';
+    _livesAlone = widget.registrationData?.livesAlone ?? 'nao';
+    _gender = widget.registrationData?.gender ?? 'masc';
+    _receivesNotifications =
+        widget.registrationData?.receivesNotifications ?? true;
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _senhaController.dispose();
+    _confirmSenhaController.dispose();
     _nomeController.dispose();
     _faixaEtariaController.dispose();
     _profissaoController.dispose();
@@ -86,32 +94,26 @@ class _UserFormPageState extends State<UserFormPage> {
       });
 
       try {
-        // Criar um novo UserModel com os dados do formulário
-        final user = UserModel(
-          id: widget.user?.id,
-          email: _emailController.text,
-          // Não incluímos a senha no modelo - ela será tratada separadamente
-          tipoUsuario: _tipoUsuario,
-          nome: _nomeController.text,
-          faixaEtaria: _faixaEtariaController.text,
-          profissao: _profissaoController.text,
-          moraSozinho: _moraSozinho,
-          sexo: _sexo,
-          tempoDisponivel: _tempoDisponivelController.text,
-          hobbies: _hobbiesController.text,
-        );
+        final registrationData = RegistrationData()
+          ..email = _emailController.text
+          ..password = _senhaController.text
+          ..confirmPassword = _confirmSenhaController.text
+          ..userType = _userType
+          ..name = _nomeController.text
+          ..ageRange = _faixaEtariaController.text
+          ..profession = _profissaoController.text
+          ..livesAlone = _livesAlone
+          ..gender = _gender
+          ..availableTime = _tempoDisponivelController.text
+          ..hobbies = _hobbiesController.text
+          ..receivesNotifications = _receivesNotifications;
 
         bool success;
 
         if (_isEditing) {
-          // Atualizar usuário existente
-          success = await _userController.updateUser(user);
+          success = await _userController.updateUser(registrationData);
         } else {
-          // Registrar novo usuário
-          success = await _userController.registerUser(
-            user,
-            _senhaController.text,
-          );
+          success = await _userController.registerUser(registrationData);
         }
 
         if (success) {
@@ -119,7 +121,7 @@ class _UserFormPageState extends State<UserFormPage> {
             SnackBar(
               content: Text(
                 _isEditing
-                    ? 'Usuário atualizado com sucesso!'
+                    ? 'Dados atualizados com sucesso!'
                     : 'Usuário registrado com sucesso!',
               ),
               backgroundColor: Colors.green,
@@ -127,7 +129,6 @@ class _UserFormPageState extends State<UserFormPage> {
           );
           Navigator.of(context).pop();
         } else {
-          // Mostrar mensagem de erro do controller
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(_userController.errorMessage ?? 'Ocorreu um erro'),
@@ -152,10 +153,10 @@ class _UserFormPageState extends State<UserFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar Usuário' : 'Novo Usuário'),
-      ),
+    return MainTemplate(
+      title: _isEditing ? 'Editar Perfil' : 'Novo Usuário',
+      currentIndex: 0,
+      onItemTapped: (index) {},
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -165,180 +166,33 @@ class _UserFormPageState extends State<UserFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Campo Email
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                      keyboardType: TextInputType.emailAddress,
-                      enabled:
-                          !_isEditing, // Não permitir editar email em usuários existentes
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor, insira um email';
-                        }
-                        if (!RegExp(
-                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                        ).hasMatch(value)) {
-                          return 'Por favor, insira um email válido';
-                        }
-                        return null;
-                      },
-                    ),
-
+                    _buildEmailField(),
                     const SizedBox(height: 16),
-
-                    // Campo Senha - apenas para novos usuários
                     if (!_isEditing) ...[
-                      TextFormField(
-                        controller: _senhaController,
-                        decoration: const InputDecoration(labelText: 'Senha'),
-                        obscureText: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, insira uma senha';
-                          }
-                          if (value.length < 6) {
-                            return 'A senha deve ter pelo menos 6 caracteres';
-                          }
-                          return null;
-                        },
-                      ),
+                      _buildPasswordField(),
+                      const SizedBox(height: 16),
+                      _buildConfirmPasswordField(),
                       const SizedBox(height: 16),
                     ],
-
-                    // Campo Nome
-                    TextFormField(
-                      controller: _nomeController,
-                      decoration: const InputDecoration(labelText: 'Nome'),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor, insira um nome';
-                        }
-                        return null;
-                      },
-                    ),
-
+                    _buildNameField(),
                     const SizedBox(height: 16),
-
-                    // Dropdown Tipo de Usuário
-                    DropdownButtonFormField<TipoUsuario>(
-                      value: _tipoUsuario,
-                      decoration: const InputDecoration(
-                        labelText: 'Tipo de Usuário',
-                      ),
-                      items: TipoUsuario.values.map((TipoUsuario tipo) {
-                        return DropdownMenuItem<TipoUsuario>(
-                          value: tipo,
-                          child: Text(_getTipoUsuarioText(tipo)),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _tipoUsuario = value;
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null) {
-                          return 'Por favor, selecione um tipo de usuário';
-                        }
-                        return null;
-                      },
-                    ),
-
+                    _buildUserTypeDropdown(),
                     const SizedBox(height: 16),
-
-                    // Campo Faixa Etária
-                    TextFormField(
-                      controller: _faixaEtariaController,
-                      decoration: const InputDecoration(
-                        labelText: 'Faixa Etária',
-                      ),
-                    ),
-
+                    _buildAgeRangeField(),
                     const SizedBox(height: 16),
-
-                    // Campo Profissão
-                    TextFormField(
-                      controller: _profissaoController,
-                      decoration: const InputDecoration(labelText: 'Profissão'),
-                    ),
-
+                    _buildProfessionField(),
                     const SizedBox(height: 16),
-
-                    // Dropdown Mora Sozinho
-                    DropdownButtonFormField<MoraSozinho>(
-                      value: _moraSozinho,
-                      decoration: const InputDecoration(
-                        labelText: 'Mora Sozinho',
-                      ),
-                      items: MoraSozinho.values.map((MoraSozinho mora) {
-                        return DropdownMenuItem<MoraSozinho>(
-                          value: mora,
-                          child: Text(_getMoraSozinhoText(mora)),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _moraSozinho = value;
-                        });
-                      },
-                    ),
-
+                    _buildLivesAloneDropdown(),
                     const SizedBox(height: 16),
-
-                    // Dropdown Sexo
-                    DropdownButtonFormField<Sexo>(
-                      value: _sexo,
-                      decoration: const InputDecoration(labelText: 'Sexo'),
-                      items: Sexo.values.map((Sexo sexo) {
-                        return DropdownMenuItem<Sexo>(
-                          value: sexo,
-                          child: Text(_getSexoText(sexo)),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _sexo = value;
-                        });
-                      },
-                    ),
-
+                    _buildGenderDropdown(),
                     const SizedBox(height: 16),
-
-                    // Campo Tempo Disponível
-                    TextFormField(
-                      controller: _tempoDisponivelController,
-                      decoration: const InputDecoration(
-                        labelText: 'Tempo Disponível',
-                      ),
-                    ),
-
+                    _buildAvailableTimeField(),
                     const SizedBox(height: 16),
-
-                    // Campo Hobbies
-                    TextFormField(
-                      controller: _hobbiesController,
-                      decoration: const InputDecoration(labelText: 'Hobbies'),
-                      maxLines: 3,
-                    ),
-
+                    _buildHobbiesField(),
+                    const SizedBox(height: 16),
+                    _buildNotificationsCheckbox(),
                     const SizedBox(height: 24),
-
-                    // Botão Salvar
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _saveForm,
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Text('Salvar'),
-                    ),
+                    _buildSaveButton(),
                   ],
                 ),
               ),
@@ -346,38 +200,155 @@ class _UserFormPageState extends State<UserFormPage> {
     );
   }
 
-  String _getTipoUsuarioText(TipoUsuario tipo) {
-    switch (tipo) {
-      case TipoUsuario.aluno:
-        return 'Aluno';
-      case TipoUsuario.colaborador:
-        return 'Colaborador';
-      case TipoUsuario.outro:
-        return 'Outro';
-    }
+  Widget _buildEmailField() {
+    return EmailInputForm(
+      controller: _emailController,
+      enabled: !_isEditing,
+    );
   }
 
-  String _getMoraSozinhoText(MoraSozinho mora) {
-    switch (mora) {
-      case MoraSozinho.sim:
-        return 'Sim';
-      case MoraSozinho.nao:
-        return 'Não';
-      case MoraSozinho.vezes:
-        return 'Às vezes';
-    }
+  Widget _buildPasswordField() {
+    return PasswordInputForm(
+      controller: _senhaController,
+    );
   }
 
-  String _getSexoText(Sexo sexo) {
-    switch (sexo) {
-      case Sexo.masculino:
-        return 'Masculino';
-      case Sexo.feminino:
-        return 'Feminino';
-      case Sexo.naoBinario:
-        return 'Não Binário';
-      case Sexo.prefiroNaoInformar:
-        return 'Prefiro não informar';
-    }
+  Widget _buildConfirmPasswordField() {
+    return TextFormField(
+      controller: _confirmSenhaController,
+      decoration: const InputDecoration(
+        labelText: 'Confirmar Senha',
+      ),
+      obscureText: true,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor, confirme sua senha';
+        }
+        if (value != _senhaController.text) {
+          return 'As senhas não coincidem';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildNameField() {
+    return TextInputForm(
+      controller: _nomeController,
+      labelText: 'Nome',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor, insira um nome';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildUserTypeDropdown() {
+    return DropdownInputForm<String>(
+      value: _userType,
+      labelText: 'Tipo de Usuário',
+      items: const [
+        DropdownMenuItem(value: 'paciente', child: Text('Paciente')),
+        DropdownMenuItem(value: 'profissional', child: Text('Profissional')),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _userType = value ?? 'paciente';
+        });
+      },
+    );
+  }
+
+  Widget _buildAgeRangeField() {
+    return TextInputForm(
+      controller: _faixaEtariaController,
+      labelText: 'Faixa Etária',
+    );
+  }
+
+  Widget _buildProfessionField() {
+    return TextInputForm(
+      controller: _profissaoController,
+      labelText: 'Profissão',
+    );
+  }
+
+  Widget _buildLivesAloneDropdown() {
+    return DropdownInputForm<String>(
+      value: _livesAlone,
+      labelText: 'Mora Sozinho',
+      items: const [
+        DropdownMenuItem(value: 'sim', child: Text('Sim')),
+        DropdownMenuItem(value: 'nao', child: Text('Não')),
+        DropdownMenuItem(value: 'vezes', child: Text('Às vezes')),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _livesAlone = value ?? 'nao';
+        });
+      },
+    );
+  }
+
+  Widget _buildGenderDropdown() {
+    return DropdownInputForm<String>(
+      value: _gender,
+      labelText: 'Sexo',
+      items: const [
+        DropdownMenuItem(value: 'masc', child: Text('Masculino')),
+        DropdownMenuItem(value: 'fem', child: Text('Feminino')),
+        DropdownMenuItem(value: 'outro', child: Text('Outro')),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _gender = value ?? 'masc';
+        });
+      },
+    );
+  }
+
+  Widget _buildAvailableTimeField() {
+    return TextInputForm(
+      controller: _tempoDisponivelController,
+      labelText: 'Tempo Disponível',
+    );
+  }
+
+  Widget _buildHobbiesField() {
+    return TextInputForm(
+      controller: _hobbiesController,
+      labelText: 'Hobbies',
+      maxLines: 3,
+    );
+  }
+
+  Widget _buildNotificationsCheckbox() {
+    return CheckboxListTile(
+      title: const Text('Receber notificações'),
+      value: _receivesNotifications,
+      onChanged: (value) {
+        setState(() {
+          _receivesNotifications = value ?? true;
+        });
+      },
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return MainButton(
+      text: 'Salvar',
+      onPressed: _isLoading ? null : _saveForm,
+      child: _isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : null,
+    );
   }
 }

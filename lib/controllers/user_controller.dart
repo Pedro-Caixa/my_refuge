@@ -1,19 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../models/userModel.dart';
+import '../models/registration_data.dart';
 
 class UserController extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  List<UserModel> _users = [];
-  UserModel? _currentUser;
+  RegistrationData? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
 
-  List<UserModel> get users => _users;
-  UserModel? get currentUser => _currentUser;
+  RegistrationData? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _currentUser != null;
@@ -32,12 +30,22 @@ class UserController extends ChangeNotifier {
   Future<void> _loadCurrentUser(String uid) async {
     try {
       _setLoading(true);
-      DocumentSnapshot doc = await _firestore
-          .collection('users')
-          .doc(uid)
-          .get();
+      DocumentSnapshot doc =
+          await _firestore.collection('users').doc(uid).get();
+
       if (doc.exists) {
-        _currentUser = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        _currentUser = RegistrationData()
+          ..email = data['email'] ?? ''
+          ..userType = data['userType'] ?? 'paciente'
+          ..name = data['name'] ?? ''
+          ..ageRange = data['ageRange'] ?? ''
+          ..profession = data['profession'] ?? ''
+          ..livesAlone = data['livesAlone'] ?? 'nao'
+          ..gender = data['gender'] ?? 'masc'
+          ..availableTime = data['availableTime'] ?? ''
+          ..hobbies = data['hobbies'] ?? ''
+          ..receivesNotifications = data['receivesNotifications'] ?? true;
       }
     } catch (e) {
       _setError('Erro ao carregar dados do usuário: $e');
@@ -46,44 +54,52 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  Future<bool> registerUser(UserModel user, String senha) async {
+  Future<bool> registerUser(RegistrationData registrationData) async {
     try {
       _setLoading(true);
       _clearError();
 
-      if (!_isValidEmail(user.email ?? '')) {
+      if (!_isValidEmail(registrationData.email)) {
         _setError('Email inválido!');
         return false;
       }
 
-      if (!_isValidPassword(senha)) {
+      if (!_isValidPassword(registrationData.password)) {
         _setError('Senha deve ter pelo menos 6 caracteres!');
         return false;
       }
 
-      UserCredential userCredential = await _auth
-          .createUserWithEmailAndPassword(email: user.email!, password: senha);
+      if (registrationData.password != registrationData.confirmPassword) {
+        _setError('As senhas não coincidem!');
+        return false;
+      }
 
-      final newUser = UserModel(
-        id: userCredential.user?.uid,
-        email: user.email,
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+              email: registrationData.email,
+              password: registrationData.password);
 
-        tipoUsuario: user.tipoUsuario,
-        nome: user.nome,
-        faixaEtaria: user.faixaEtaria,
-        profissao: user.profissao,
-        moraSozinho: user.moraSozinho,
-        sexo: user.sexo,
-        tempoDisponivel: user.tempoDisponivel,
-        hobbies: user.hobbies,
-      );
+      Map<String, dynamic> userData = {
+        'email': registrationData.email,
+        'userType': registrationData.userType,
+        'name': registrationData.name,
+        'ageRange': registrationData.ageRange,
+        'profession': registrationData.profession,
+        'livesAlone': registrationData.livesAlone,
+        'gender': registrationData.gender,
+        'availableTime': registrationData.availableTime,
+        'hobbies': registrationData.hobbies,
+        'receivesNotifications': registrationData.receivesNotifications,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
 
-      Map<String, dynamic> userData = newUser.toMap();
-      userData.remove('senha');
-      userData['createdAt'] = FieldValue.serverTimestamp();
+      await _firestore
+          .collection('users')
+          .doc(userCredential.user?.uid)
+          .set(userData);
 
-      await _firestore.collection('users').doc(newUser.id).set(userData);
-      _currentUser = newUser;
+      // Atualizar o usuário atual após o registro
+      await _loadCurrentUser(userCredential.user!.uid);
 
       return true;
     } on FirebaseAuthException catch (e) {
@@ -126,23 +142,36 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateUser(UserModel user) async {
+  Future<bool> updateUser(RegistrationData registrationData) async {
     try {
       _setLoading(true);
       _clearError();
 
-      if (user.id == null) {
-        _setError('ID do usuário não encontrado');
+      if (_auth.currentUser == null) {
+        _setError('Usuário não autenticado');
         return false;
       }
 
-      Map<String, dynamic> updateData = user.toMap();
-      updateData.remove('senha');
-      updateData['updatedAt'] = FieldValue.serverTimestamp();
+      Map<String, dynamic> updateData = {
+        'userType': registrationData.userType,
+        'name': registrationData.name,
+        'ageRange': registrationData.ageRange,
+        'profession': registrationData.profession,
+        'livesAlone': registrationData.livesAlone,
+        'gender': registrationData.gender,
+        'availableTime': registrationData.availableTime,
+        'hobbies': registrationData.hobbies,
+        'receivesNotifications': registrationData.receivesNotifications,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
 
-      await _firestore.collection('users').doc(user.id).update(updateData);
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .update(updateData);
 
-      await _loadCurrentUser(user.id!);
+      // Atualizar o usuário atual após a atualização
+      await _loadCurrentUser(_auth.currentUser!.uid);
 
       return true;
     } catch (e) {
@@ -178,7 +207,6 @@ class UserController extends ChangeNotifier {
       );
 
       await user.reauthenticateWithCredential(credential);
-
       await user.updatePassword(newPassword);
 
       return true;
