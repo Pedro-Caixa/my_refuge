@@ -36,6 +36,7 @@ dependencies:
   cloud_firestore: ^6.0.1
   cupertino_icons: ^1.0.8
   url_launcher: ^6.1.7
+  flutter_dotenv: ^5.0.2
   
 
 dev_dependencies:

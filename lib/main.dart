@@ -1,16 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'env_firebase_options.dart';
 import 'views/pages/welcome_page.dart';
 import 'views/pages/register_page.dart';
 import 'views/pages/home_page.dart';
 import 'views/pages/humor_page.dart';
 import 'views/pages/exercicios_page.dart';
 import 'views/pages/frases_page.dart';
-import 'views/pages/consulta_page.dart'; // Importe a página
+import 'views/pages/consulta_page.dart';
 import 'models/registration_data.dart';
 import 'controllers/user_controller.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables from a .env file (not checked into git)
+  await dotenv.load(fileName: ".env");
+
+  // Initialize Firebase using env vars (supports platform-specific keys).
+  // If env vars are not present, call initializeApp() with no options so the
+  // native configuration (google-services.json / GoogleService-Info.plist)
+  // can be used instead.
+  final envOptions = firebaseOptionsFromEnv();
+  if (envOptions != null) {
+    await Firebase.initializeApp(options: envOptions);
+  } else {
+    await Firebase.initializeApp();
+  }
+
   runApp(
     MultiProvider(
       providers: [
