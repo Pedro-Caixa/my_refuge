@@ -10,6 +10,8 @@ import '../widgets/inputs/dropdown_input.dart';
 import '../widgets/inputs/checkbox_input.dart';
 import '../widgets/buttons/main_button.dart';
 import '../widgets/sections/anonymous_access.dart';
+import '../widgets/anonymous_login_dialog.dart';
+import '../../controllers/user_controller.dart';
 import '../../models/registration_data.dart';
 
 class RegisterScreen extends StatelessWidget {
@@ -30,8 +32,19 @@ class RegisterScreen extends StatelessWidget {
           const SizedBox(height: 20),
           _buildRegistrationForm(context),
           const SizedBox(height: 16),
-          const AnonymousAccessSection(
-            onPressed: null, // Será definido posteriormente
+          AnonymousAccessSection(
+            onPressed: () async {
+              // Abrir diálogo de login anônimo
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => const AnonymousLoginDialog(),
+              );
+              
+              // Se o login for bem-sucedido, navegar para a página inicial
+              if (result == true && context.mounted) {
+                Navigator.pushReplacementNamed(context, '/home');
+              }
+            },
           ),
         ],
       ),
@@ -191,11 +204,69 @@ class RegisterScreen extends StatelessWidget {
   }
 
   Widget _buildCreateAccountButton(BuildContext context) {
-    return MainButton(
-      text: "Criar Conta",
-      onPressed: () {
-        Navigator.pushNamed(context, '/home');
-      },
+    final registrationData = Provider.of<RegistrationData>(context, listen: false);
+    final userController = Provider.of<UserController>(context);
+    
+    return userController.isLoading
+        ? const CircularProgressIndicator()
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              MainButton(
+                text: "Criar Conta",
+                onPressed: () async {
+                  // Validar e enviar os dados para registro
+                  if (_validateRegistration(registrationData, context)) {
+                    final success = await userController.registerUser(registrationData);
+                    
+                    if (success && context.mounted) {
+                      Navigator.pushReplacementNamed(context, '/home');
+                    }
+                  }
+                },
+              ),
+              if (userController.errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    userController.errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          );
+  }
+  
+  // Método para validar os dados de registro
+  bool _validateRegistration(RegistrationData data, BuildContext context) {
+    if (data.name.isEmpty) {
+      _showValidationError(context, 'Nome é obrigatório');
+      return false;
+    }
+    if (data.email.isEmpty || !data.email.contains('@')) {
+      _showValidationError(context, 'Email inválido');
+      return false;
+    }
+    if (data.password.isEmpty || data.password.length < 6) {
+      _showValidationError(context, 'A senha deve ter pelo menos 6 caracteres');
+      return false;
+    }
+    if (data.password != data.confirmPassword) {
+      _showValidationError(context, 'As senhas não coincidem');
+      return false;
+    }
+    return true;
+  }
+  
+  // Método para exibir erros de validação
+  void _showValidationError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 }

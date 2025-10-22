@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../template/auth_template.dart';
 import '../widgets/sections/auth_header.dart';
 import '../widgets/sections/auth_toggler.dart';
@@ -6,6 +7,8 @@ import '../widgets/inputs/email_input.dart';
 import '../widgets/inputs/password_input.dart';
 import '../widgets/buttons/main_button.dart';
 import '../widgets/sections/anonymous_access.dart';
+import '../widgets/anonymous_login_dialog.dart';
+import '../../controllers/user_controller.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
@@ -47,11 +50,19 @@ class _WelcomePageState extends State<WelcomePage> {
           const SizedBox(height: 25),
           _buildLoginForm(),
           const SizedBox(height: 25),
-          // Corrigido: adicionando a ação para o botão "Usar Anonimamente"
+          // Utiliza o UserController para login anônimo
           AnonymousAccessSection(
-            onPressed: () {
-              // Navega para a tela inicial quando o botão for pressionado
-              Navigator.pushNamed(context, '/home');
+            onPressed: () async {
+              // Abrir diálogo de login anônimo
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => const AnonymousLoginDialog(),
+              );
+              
+              // Se o login for bem-sucedido, navegar para a página inicial
+              if (result == true && mounted) {
+                Navigator.pushReplacementNamed(context, '/home');
+              }
             },
           ),
         ],
@@ -76,7 +87,20 @@ class _WelcomePageState extends State<WelcomePage> {
     );
   }
 
+  // Controllers para capturar os valores dos campos
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Widget _buildLoginForm() {
+    final userController = Provider.of<UserController>(context);
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -85,9 +109,12 @@ class _WelcomePageState extends State<WelcomePage> {
       ),
       child: Column(
         children: [
-          const EmailInput(),
+          EmailInput(
+            controller: _emailController,
+          ),
           const SizedBox(height: 15),
           PasswordInput(
+            controller: _passwordController,
             obscurePassword: _obscurePassword,
             onToggleVisibility: () {
               setState(() {
@@ -95,13 +122,31 @@ class _WelcomePageState extends State<WelcomePage> {
               });
             },
           ),
+          if (userController.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                userController.errorMessage!,
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+              ),
+            ),
           const SizedBox(height: 20),
-          MainButton(
-            text: "Entrar",
-            onPressed: () {
-              Navigator.pushNamed(context, '/home');
-            },
-          ),
+          userController.isLoading
+              ? const CircularProgressIndicator()
+              : MainButton(
+                  text: "Entrar",
+                  onPressed: () async {
+                    // Realizar login utilizando o controlador
+                    final success = await userController.login(
+                      _emailController.text.trim(),
+                      _passwordController.text,
+                    );
+                    
+                    if (success && mounted) {
+                      Navigator.pushReplacementNamed(context, '/home');
+                    }
+                  },
+                ),
         ],
       ),
     );

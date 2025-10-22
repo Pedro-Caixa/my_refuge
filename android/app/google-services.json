@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "897560463762",
-    "project_id": "aula-298d6",
-    "storage_bucket": "aula-298d6.firebasestorage.app"
+    "project_number": "920326297363",
+    "project_id": "my-refuge-acec0",
+    "storage_bucket": "my-refuge-acec0.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:897560463762:android:0e46a5b7c3b5df81f5d94b",
+        "mobilesdk_app_id": "1:920326297363:android:a89cf4863302ef4bc36ce6",
         "android_client_info": {
           "package_name": "com.example.my_refuge"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBbxq7ceEyvEiugigj7KFqpDyidjGfQfv8"
+          "current_key": "AIzaSyDg7olTBm13kM6p6HssCkWV3euwVCBN8CE"
         }
       ],
       "services": {

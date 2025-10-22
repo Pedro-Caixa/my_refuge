@@ -6,6 +6,7 @@ class PasswordInput extends StatefulWidget {
   final Function(String)? onChanged;
   final bool obscurePassword;
   final VoidCallback? onToggleVisibility;
+  final TextEditingController? controller;
 
   const PasswordInput({
     Key? key,
@@ -14,6 +15,7 @@ class PasswordInput extends StatefulWidget {
     this.onChanged,
     this.obscurePassword = true,
     this.onToggleVisibility,
+    this.controller,
   }) : super(key: key);
 
   @override
@@ -32,6 +34,7 @@ class _PasswordInputState extends State<PasswordInput> {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: widget.controller,
       onChanged: widget.onChanged,
       obscureText: _obscurePassword,
       decoration: InputDecoration(

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'env_firebase_options.dart';
+import 'firebase_options.dart';
 import 'views/pages/welcome_page.dart';
 import 'views/pages/register_page.dart';
 import 'views/pages/home_page.dart';
@@ -15,20 +16,21 @@ import 'controllers/user_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  print("Iniciando aplicativo My Refuge");
+  print("Plataforma: ${defaultTargetPlatform.toString()}");
 
   // Load environment variables from a .env file (not checked into git)
-  await dotenv.load(fileName: ".env");
-
-  // Initialize Firebase using env vars (supports platform-specific keys).
-  // If env vars are not present, call initializeApp() with no options so the
-  // native configuration (google-services.json / GoogleService-Info.plist)
-  // can be used instead.
-  final envOptions = firebaseOptionsFromEnv();
-  if (envOptions != null) {
-    await Firebase.initializeApp(options: envOptions);
-  } else {
-    await Firebase.initializeApp();
+  try {
+    await dotenv.load(fileName: ".env");
+    print(".env carregado com sucesso");
+  } catch (e) {
+    print("Erro ao carregar .env: $e");
   }
+
+ await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+);
 
   runApp(
     MultiProvider(
@@ -76,7 +78,7 @@ class MyApp extends StatelessWidget {
         '/humor': (context) => const CheckInPage(),
         '/exercicios': (context) => const ExerciciosPage(),
         '/frases': (context) => const MotivationalPage(),
-        '/consulta': (context) => const ConsultaPage(), // Adicione esta rota
+        '/consulta': (context) => const ConsultaPage(),
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(
