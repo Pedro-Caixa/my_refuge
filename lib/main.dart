@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+
 import 'views/pages/welcome_page.dart';
 import 'views/pages/register_page.dart';
 import 'views/pages/home_page.dart';
@@ -16,11 +17,11 @@ import 'controllers/user_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   print("Iniciando aplicativo My Refuge");
   print("Plataforma: ${defaultTargetPlatform.toString()}");
 
-  // Load environment variables from a .env file (not checked into git)
+  // Carregar variáveis do .env
   try {
     await dotenv.load(fileName: ".env");
     print(".env carregado com sucesso");
@@ -28,9 +29,23 @@ Future<void> main() async {
     print("Erro ao carregar .env: $e");
   }
 
- await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-);
+  // Configuração do Firebase usando variáveis do .env
+  final firebaseConfig = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_API_KEY']!,
+    appId: dotenv.env['FIREBASE_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
+  );
+
+  // Inicializar Firebase com tratamento de erros
+  try {
+    await Firebase.initializeApp(options: firebaseConfig);
+    print("Firebase inicializado com sucesso!");
+  } catch (e) {
+    print("Erro ao inicializar Firebase: $e");
+  }
 
   runApp(
     MultiProvider(
@@ -81,9 +96,7 @@ class MyApp extends StatelessWidget {
         '/consulta': (context) => const ConsultaPage(),
       },
       onUnknownRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (context) => const WelcomePage(),
-        );
+        return MaterialPageRoute(builder: (context) => const WelcomePage());
       },
     );
   }
