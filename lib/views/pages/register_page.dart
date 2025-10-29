@@ -140,11 +140,17 @@ class RegisterScreen extends StatelessWidget {
           onChanged: (value) => registrationData.name = value,
         ),
         const SizedBox(height: 12),
-        TextInput(
+        DropdownInput<String>(
           labelText: "Faixa Etária",
-          hintText: "Idade",
-          keyboardType: TextInputType.number,
-          onChanged: (value) => registrationData.ageRange = value,
+          value: registrationData.ageRange.isEmpty ? null : registrationData.ageRange,
+          items: const [
+            DropdownMenuItem(value: '18-25', child: Text('18-25 anos')),
+            DropdownMenuItem(value: '26-35', child: Text('26-35 anos')),
+            DropdownMenuItem(value: '36-45', child: Text('36-45 anos')),
+            DropdownMenuItem(value: '46-60', child: Text('46-60 anos')),
+            DropdownMenuItem(value: '61+', child: Text('61+ anos')),
+          ],
+          onChanged: (value) => registrationData.ageRange = value ?? registrationData.ageRange,
         ),
         const SizedBox(height: 12),
         TextInput(
