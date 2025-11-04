@@ -112,12 +112,36 @@ class RegisterScreen extends StatelessWidget {
           ),
           value: registrationData.userType.isEmpty ? null : registrationData.userType,
           items: const [
-            DropdownMenuItem(value: "paciente", child: Text("Paciente")),
+            DropdownMenuItem(value: "Estudante", child: Text("Estudante")),
             DropdownMenuItem(
-                value: "profissional", child: Text("Profissional")),
+                value: "Colaborador", child: Text("Colaborador")),
           ],
           onChanged: (value) =>
               registrationData.userType = value ?? registrationData.userType,
+        ),
+        const SizedBox(height: 12),
+        TextInput(
+          labelText: "Nome *",
+          hintText: "Seu nome",
+          onChanged: (value) => registrationData.name = value,
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            labelText: "Faixa Etária *",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          value: registrationData.ageRange.isEmpty ? null : registrationData.ageRange,
+          items: const [
+            DropdownMenuItem(value: '18-25', child: Text('18-25 anos')),
+            DropdownMenuItem(value: '26-35', child: Text('26-35 anos')),
+            DropdownMenuItem(value: '36-45', child: Text('36-45 anos')),
+            DropdownMenuItem(value: '46-60', child: Text('46-60 anos')),
+            DropdownMenuItem(value: '61+', child: Text('61+ anos')),
+          ],
+          onChanged: (value) => registrationData.ageRange = value ?? registrationData.ageRange,
         ),
       ],
     );
@@ -136,30 +160,6 @@ class RegisterScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
-        ),
-        const SizedBox(height: 12),
-        TextInput(
-          labelText: "Nome",
-          hintText: "Seu nome",
-          onChanged: (value) => registrationData.name = value,
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          decoration: InputDecoration(
-            labelText: "Faixa Etária",
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          value: registrationData.ageRange.isEmpty ? null : registrationData.ageRange,
-          items: const [
-            DropdownMenuItem(value: '18-25', child: Text('18-25 anos')),
-            DropdownMenuItem(value: '26-35', child: Text('26-35 anos')),
-            DropdownMenuItem(value: '36-45', child: Text('36-45 anos')),
-            DropdownMenuItem(value: '46-60', child: Text('46-60 anos')),
-            DropdownMenuItem(value: '61+', child: Text('61+ anos')),
-          ],
-          onChanged: (value) => registrationData.ageRange = value ?? registrationData.ageRange,
         ),
         const SizedBox(height: 12),
         TextInput(
@@ -253,8 +253,16 @@ class RegisterScreen extends StatelessWidget {
   
   // Método para validar os dados de registro
   bool _validateRegistration(RegistrationData data, BuildContext context) {
+    if (data.userType.isEmpty) {
+      _showValidationError(context, 'Tipo de usuário é obrigatório');
+      return false;
+    }
     if (data.name.isEmpty) {
       _showValidationError(context, 'Nome é obrigatório');
+      return false;
+    }
+    if (data.ageRange.isEmpty) {
+      _showValidationError(context, 'Faixa etária é obrigatória');
       return false;
     }
     if (data.email.isEmpty || !data.email.contains('@')) {

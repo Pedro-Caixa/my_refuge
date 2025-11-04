@@ -109,11 +109,11 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
         ),
         const SizedBox(width: 10),
         SelectableButton(
-          text: "Profissional",
-          isSelected: _selectedUserType == 'Profissional',
+          text: "Colaborador",
+          isSelected: _selectedUserType == 'Colaborador',
           onPressed: () {
             setState(() {
-              _selectedUserType = 'Profissional';
+              _selectedUserType = 'Colaborador';
             });
           },
         ),

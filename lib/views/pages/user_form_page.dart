@@ -31,7 +31,7 @@ class _UserFormPageState extends State<UserFormPage> {
   late TextEditingController _tempoDisponivelController;
   late TextEditingController _hobbiesController;
 
-  String _userType = 'paciente';
+  String _userType = 'Estudante';
   String _livesAlone = 'nao';
   String _gender = 'masc';
   bool _receivesNotifications = true;
@@ -61,7 +61,7 @@ class _UserFormPageState extends State<UserFormPage> {
         TextEditingController(text: widget.registrationData?.hobbies ?? '');
 
     // Inicializar variáveis com valores do registrationData se existir
-    _userType = widget.registrationData?.userType ?? 'paciente';
+    _userType = widget.registrationData?.userType ?? 'Estudante';
     _livesAlone = widget.registrationData?.livesAlone ?? 'nao';
     _gender = widget.registrationData?.gender ?? 'masc';
     _receivesNotifications =
@@ -250,12 +250,12 @@ class _UserFormPageState extends State<UserFormPage> {
       value: _userType,
       labelText: 'Tipo de Usuário',
       items: const [
-        DropdownMenuItem(value: 'paciente', child: Text('Paciente')),
-        DropdownMenuItem(value: 'profissional', child: Text('Profissional')),
+        DropdownMenuItem(value: 'Estudante', child: Text('Estudante')),
+        DropdownMenuItem(value: 'Colaborador', child: Text('Colaborador')),
       ],
       onChanged: (value) {
         setState(() {
-          _userType = value ?? 'paciente';
+          _userType = value ?? 'Estudante';
         });
       },
     );
