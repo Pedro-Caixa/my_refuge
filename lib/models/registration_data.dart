@@ -4,7 +4,7 @@ class RegistrationData extends ChangeNotifier {
   String _email = '';
   String _password = '';
   String _confirmPassword = '';
-  String _userType = 'Estudante';
+  String _userType = '';
   String _name = '';
   String _ageRange = '';
   String _profession = '';

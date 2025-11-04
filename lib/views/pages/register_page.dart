@@ -6,7 +6,6 @@ import '../widgets/inputs/email_input.dart';
 import '../widgets/inputs/password_input.dart';
 import '../widgets/inputs/confirm_password_input.dart';
 import '../widgets/inputs/text_input.dart';
-import '../widgets/inputs/dropdown_input.dart';
 import '../widgets/inputs/checkbox_input.dart';
 import '../widgets/buttons/main_button.dart';
 import '../widgets/sections/anonymous_access.dart';
@@ -104,9 +103,14 @@ class RegisterScreen extends StatelessWidget {
           onChanged: (value) => registrationData.confirmPassword = value,
         ),
         const SizedBox(height: 12),
-        DropdownInput<String>(
-          labelText: "Tipo de Usuário *",
-          value: registrationData.userType,
+        DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            labelText: "Tipo de Usuário *",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          value: registrationData.userType.isEmpty ? null : registrationData.userType,
           items: const [
             DropdownMenuItem(value: "paciente", child: Text("Paciente")),
             DropdownMenuItem(
@@ -140,8 +144,13 @@ class RegisterScreen extends StatelessWidget {
           onChanged: (value) => registrationData.name = value,
         ),
         const SizedBox(height: 12),
-        DropdownInput<String>(
-          labelText: "Faixa Etária",
+        DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            labelText: "Faixa Etária",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
           value: registrationData.ageRange.isEmpty ? null : registrationData.ageRange,
           items: const [
             DropdownMenuItem(value: '18-25', child: Text('18-25 anos')),
@@ -159,8 +168,13 @@ class RegisterScreen extends StatelessWidget {
           onChanged: (value) => registrationData.profession = value,
         ),
         const SizedBox(height: 12),
-        DropdownInput<String>(
-          labelText: "Mora Sozinho",
+        DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            labelText: "Mora Sozinho",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
           value: registrationData.livesAlone,
           items: const [
             DropdownMenuItem(value: "sim", child: Text("Sim")),
@@ -170,8 +184,13 @@ class RegisterScreen extends StatelessWidget {
               value ?? registrationData.livesAlone,
         ),
         const SizedBox(height: 12),
-        DropdownInput<String>(
-          labelText: "Sexo",
+        DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            labelText: "Sexo",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
           value: registrationData.gender,
           items: const [
             DropdownMenuItem(value: "masc", child: Text("Masculino")),
@@ -215,32 +234,20 @@ class RegisterScreen extends StatelessWidget {
     
     return userController.isLoading
         ? const CircularProgressIndicator()
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              MainButton(
-                text: "Criar Conta",
-                onPressed: () async {
-                  // Validar e enviar os dados para registro
-                  if (_validateRegistration(registrationData, context)) {
-                    final success = await userController.registerUser(registrationData);
-                    
-                    if (success && context.mounted) {
-                      Navigator.pushReplacementNamed(context, '/home');
-                    }
-                  }
-                },
-              ),
-              if (userController.errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    userController.errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-            ],
+        : MainButton(
+            text: "Criar Conta",
+            onPressed: () async {
+              // Validar e enviar os dados para registro
+              if (_validateRegistration(registrationData, context)) {
+                final success = await userController.registerUser(registrationData);
+                
+                if (success && context.mounted) {
+                  Navigator.pushReplacementNamed(context, '/home');
+                } else if (userController.errorMessage != null && context.mounted) {
+                  _showValidationError(context, userController.errorMessage!);
+                }
+              }
+            },
           );
   }
   
@@ -265,7 +272,6 @@ class RegisterScreen extends StatelessWidget {
     return true;
   }
   
-  // Método para exibir erros de validação
   void _showValidationError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
