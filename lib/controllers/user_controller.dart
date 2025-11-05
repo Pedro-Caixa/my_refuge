@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/registration_data.dart';
+import '../models/check_in.dart';
 
 class UserController extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -456,6 +457,121 @@ class UserController extends ChangeNotifier {
         break;
       default:
         _setError('Erro: ${e.message}');
+    }
+  }
+
+  // Métodos para Check-In Diário
+  Future<bool> saveCheckIn(int mood, {String? note}) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final user = _auth.currentUser;
+      if (user == null) {
+        _setError('Usuário não autenticado');
+        return false;
+      }
+
+      final checkIn = CheckIn(
+        id: '', // Firestore gera o ID
+        userId: user.uid,
+        date: DateTime.now(),
+        mood: mood,
+        note: note,
+      );
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('checkins')
+          .add(checkIn.toMap());
+
+      // Atualizar streak se necessário
+      await _updateStreak(user.uid);
+
+      return true;
+    } catch (e) {
+      _setError('Erro ao salvar check-in: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<List<CheckIn>> getCheckIns({int limit = 30}) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Usuário não autenticado');
+      }
+
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('checkins')
+          .orderBy('date', descending: true)
+          .limit(limit)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => CheckIn.fromMap(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      print('Erro ao buscar check-ins: $e');
+      return [];
+    }
+  }
+
+  Future<bool> hasCheckedInToday() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      final today = DateTime.now();
+      final startOfDay = DateTime(today.year, today.month, today.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('checkins')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Erro ao verificar check-in do dia: $e');
+      return false;
+    }
+  }
+
+  Future<void> _updateStreak(String uid) async {
+    try {
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final startOfYesterday = DateTime(yesterday.year, yesterday.month, yesterday.day);
+      final endOfYesterday = startOfYesterday.add(const Duration(days: 1));
+
+      final yesterdayCheckIn = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('checkins')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYesterday))
+          .where('date', isLessThan: Timestamp.fromDate(endOfYesterday))
+          .get();
+
+      int newStreak = yesterdayCheckIn.docs.isNotEmpty ? (_currentUser?.dailyStreak ?? 0) + 1 : 1;
+
+      await _firestore.collection('users').doc(uid).update({
+        'dailyStreak': newStreak,
+      });
+
+      if (_currentUser != null) {
+        _currentUser!.dailyStreak = newStreak;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Erro ao atualizar streak: $e');
     }
   }
 

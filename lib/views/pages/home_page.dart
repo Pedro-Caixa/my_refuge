@@ -1,11 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../template/main_template.dart';
 import '../widgets/sections/option_card.dart';
 import '../widgets/sections/streak_card.dart';
-import '../widgets/sections/custom_footer.dart'; // Importar o CustomFooter
+import '../widgets/sections/custom_footer.dart';
+import '../../controllers/user_controller.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  bool _notificationShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAndShowNotification();
+  }
+
+  Future<void> _checkAndShowNotification() async {
+    final userController = Provider.of<UserController>(context, listen: false);
+    
+    // Aguardar um pouco para garantir que o usuário está carregado
+    await Future.delayed(const Duration(seconds: 1));
+    
+    if (!mounted) return;
+    
+    final hasChecked = await userController.hasCheckedInToday();
+    if (!hasChecked && !_notificationShown) {
+      _notificationShown = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Faça o seu check-in diário!'),
+          action: SnackBarAction(
+            label: 'Ir',
+            onPressed: () {
+              Navigator.pushNamed(context, '/humor');
+            },
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +81,13 @@ class HomePage extends StatelessWidget {
                 style: TextStyle(fontSize: 16, color: Colors.black54),
               ),
               const SizedBox(height: 20),
-              const StreakCard(
-                days: 7,
-                daysToReward: 43,
+              Consumer<UserController>(
+                builder: (context, userController, child) {
+                  return StreakCard(
+                    days: userController.currentUser?.dailyStreak ?? 0,
+                    daysToReward: 30 - (userController.currentUser?.dailyStreak ?? 0),
+                  );
+                },
               ),
               const SizedBox(height: 24),
               OptionCard(

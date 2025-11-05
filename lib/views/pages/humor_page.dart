@@ -1,27 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../template/main_template.dart';
 import '../widgets/sections/emotion_selector.dart';
 import '../widgets/sections/note_input.dart';
 import '../widgets/sections/history_card.dart';
 import '../widgets/buttons/save_button.dart';
 import '../widgets/sections/custom_footer.dart';
+import '../../controllers/user_controller.dart';
 
-class CheckInPage extends StatelessWidget {
+class CheckInPage extends StatefulWidget {
   const CheckInPage({super.key});
 
   @override
+  _CheckInPageState createState() => _CheckInPageState();
+}
+
+class _CheckInPageState extends State<CheckInPage> {
+  int? _selectedMood;
+  String _note = '';
+
+  @override
   Widget build(BuildContext context) {
+    final userController = Provider.of<UserController>(context);
+
     return MainTemplate(
       title: "Check-in Diário",
-      currentIndex: 0,
+      currentIndex: 1,
       onItemTapped: (int index) {
-        if (index == 0) {
-          Navigator.pushNamed(context, '/humor');
-        } else if (index == 1) {
-          // Navigator.pushNamed(context, '/resumos');
-        }
-
-        // Corrigido: alterado de 'customBottomNavigationBar' para 'bottomNavigationBa
+        // Lógica de navegação se necessário
       },
       backgroundColor: const Color(0xFFE8F2F9),
       transparentAppBar: true,
@@ -47,11 +53,22 @@ class CheckInPage extends StatelessWidget {
               style: TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            const EmotionSelector(),
+            EmotionSelector(
+              onMoodSelected: (mood) {
+                setState(() {
+                  _selectedMood = mood;
+                });
+              },
+            ),
             const SizedBox(height: 20),
-            const NoteInput(
+            NoteInput(
               labelText: "O que aconteceu hoje? (Opcional)",
               hintText: "Compartilhe algo sobre o seu dia...",
+              onChanged: (value) {
+                setState(() {
+                  _note = value;
+                });
+              },
             ),
             const SizedBox(height: 20),
             const Text(
@@ -73,15 +90,28 @@ class CheckInPage extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             SaveButton(
-              onPressed: () {
-                // Lógica para salvar o check-in
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Check-in salvo com sucesso!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
+              onPressed: _selectedMood == null || userController.isLoading
+                  ? null
+                  : () async {
+                      final success = await userController.saveCheckIn(
+                        _selectedMood!,
+                        note: _note.isEmpty ? null : _note,
+                      );
+
+                      if (success && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Check-in salvo com sucesso!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        // Limpar os campos após salvar
+                        setState(() {
+                          _selectedMood = null;
+                          _note = '';
+                        });
+                      }
+                    },
             ),
           ],
         ),
