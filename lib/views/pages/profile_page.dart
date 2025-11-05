@@ -18,11 +18,11 @@ class CompleteProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MainTemplate(
       title: "Completar Perfil",
-      currentIndex: 4,
+      currentIndex: 5,
       onItemTapped: (int index) {},
       backgroundColor: const Color(0xFFF5F8FC),
       customBottomNavigationBar: CustomFooter(
-        currentIndex: 4,
+        currentIndex: 5,
         onItemTapped: (int index) {},
       ),
       body: SingleChildScrollView(
