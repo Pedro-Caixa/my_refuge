@@ -28,7 +28,7 @@ class ConsultaPage extends StatelessWidget {
 
       // Corrigido: alterado de 'customBottomNavigationBar' para 'bottomNavigationBar'
       bottomNavigationBar: CustomFooter(
-        currentIndex: 0,
+        currentIndex: 4,
         onItemTapped: (int index) {
           // Lógica adicional se necessário
         },
