@@ -60,6 +60,9 @@ class _CustomFooterState extends State<CustomFooter> {
           case 4:
             Navigator.pushNamed(context, '/consulta');
             break;
+          case 5:
+            Navigator.pushNamed(context, '/complete-profile');
+            break;
         }
         // Chama a função onItemTapped caso exista
         widget.onItemTapped(index);
@@ -89,6 +92,10 @@ class _CustomFooterState extends State<CustomFooter> {
         const BottomNavigationBarItem(
           icon: Icon(Icons.book),
           label: "Marcar Consulta",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_pin_circle),
+          label: "Perfil",
         ),
       ],
     );

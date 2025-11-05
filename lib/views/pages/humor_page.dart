@@ -30,9 +30,8 @@ class _CheckInPageState extends State<CheckInPage> {
         // Lógica de navegação se necessário
       },
       backgroundColor: const Color(0xFFE8F2F9),
-      transparentAppBar: true,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black87),
+        icon: const Icon(Icons.arrow_back, color: Color.fromARGB(221, 255, 255, 255)),
         onPressed: () {
           Navigator.of(context).pop();
         },

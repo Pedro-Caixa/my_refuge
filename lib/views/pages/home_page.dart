@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; // Importante para acessar o UserController
+import 'package:my_refuge/controllers/user_controller.dart';
 import '../template/main_template.dart';
 import '../widgets/sections/option_card.dart';
 import '../widgets/sections/streak_card.dart';
@@ -50,6 +51,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final userController = Provider.of<UserController>(context);
+    final user = userController.currentUser;
+
     return MainTemplate(
       title: "My Refuge",
       currentIndex: 0,
@@ -71,9 +75,12 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Olá 👋",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              // Saudação dinâmica
+              Text(
+                user != null && !user.isAnonymous && user.name.isNotEmpty
+                    ? "Olá, ${user.name} 👋"
+                    : "Olá 👋",
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               const Text(
