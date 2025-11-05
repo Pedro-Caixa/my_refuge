@@ -32,7 +32,7 @@ class CheckInPage extends StatelessWidget {
         },
       ),
       customBottomNavigationBar: CustomFooter(
-        currentIndex: 0,
+        currentIndex: 1,
         onItemTapped: (int index) {
           // Lógica adicional se necessário
         },
