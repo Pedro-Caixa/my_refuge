@@ -53,6 +53,9 @@ class UserController extends ChangeNotifier {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         _currentUser = RegistrationData.fromMap(data, uid);
         print("Dados do usuário carregados com sucesso");
+        
+        // Verificar e resetar streak se necessário
+        await checkAndResetStreak();
       } else {
         print("Documento do usuário não existe no Firestore");
         // Usuário existe no Auth mas não no Firestore
@@ -523,7 +526,6 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  // Métodos para Check-In Diário
   Future<bool> saveCheckIn(int mood, {String? note}) async {
     try {
       _setLoading(true);
@@ -536,7 +538,7 @@ class UserController extends ChangeNotifier {
       }
 
       final checkIn = CheckIn(
-        id: '', // Firestore gera o ID
+        id: '',
         userId: user.uid,
         date: DateTime.now(),
         mood: mood,
@@ -549,7 +551,6 @@ class UserController extends ChangeNotifier {
           .collection('checkins')
           .add(checkIn.toMap());
 
-      // Atualizar streak se necessário
       await _updateStreak(user.uid);
 
       return true;
@@ -623,7 +624,9 @@ class UserController extends ChangeNotifier {
           .where('date', isLessThan: Timestamp.fromDate(endOfYesterday))
           .get();
 
-      int newStreak = yesterdayCheckIn.docs.isNotEmpty ? (_currentUser?.dailyStreak ?? 0) + 1 : 1;
+      int newStreak = yesterdayCheckIn.docs.isNotEmpty 
+          ? (_currentUser?.dailyStreak ?? 0) + 1 
+          : 1;
 
       await _firestore.collection('users').doc(uid).update({
         'dailyStreak': newStreak,
@@ -635,6 +638,36 @@ class UserController extends ChangeNotifier {
       }
     } catch (e) {
       print('Erro ao atualizar streak: $e');
+    }
+  }
+
+  Future<void> checkAndResetStreak() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null || _currentUser == null) return;
+
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final startOfYesterday = DateTime(yesterday.year, yesterday.month, yesterday.day);
+      final endOfYesterday = startOfYesterday.add(const Duration(days: 1));
+
+      final yesterdayCheckIn = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('checkins')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYesterday))
+          .where('date', isLessThan: Timestamp.fromDate(endOfYesterday))
+          .get();
+
+      if (yesterdayCheckIn.docs.isEmpty && (_currentUser!.dailyStreak > 1)) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'dailyStreak': 1,
+        });
+        _currentUser!.dailyStreak = 1;
+        notifyListeners();
+        print('Streak resetado para 1 devido à falta de check-in ontem');
+      }
+    } catch (e) {
+      print('Erro ao verificar/resetar streak: $e');
     }
   }
 
