@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // ← Simplificado
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,7 +11,8 @@ import 'views/pages/humor_page.dart';
 import 'views/pages/exercicios_page.dart';
 import 'views/pages/frases_page.dart';
 import 'views/pages/consulta_page.dart';
-import 'views/pages/profile_page.dart'; // ← Adicione este import
+import 'views/pages/profile_page.dart';
+import './views/pages/game_page.dart'; // ← Nova página de gamificação
 import 'models/registration_data.dart';
 import 'controllers/user_controller.dart';
 
@@ -95,6 +96,7 @@ class MyApp extends StatelessWidget {
         '/frases': (context) => const MotivationalPage(),
         '/consulta': (context) => const ConsultaPage(),
         '/complete-profile': (context) => const CompleteProfilePage(),
+        '/gamification': (context) => const GamificationPage(), // ← Nova rota
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(builder: (context) => const WelcomePage());

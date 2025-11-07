@@ -22,13 +22,12 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
-          
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF5CD4E4),
-              Color(0xFF60D4E4),
+              Color(0xFF4DD0E1),
+              Color(0xFF4DD0E1),
             ],
           ),
           boxShadow: [
@@ -53,15 +52,11 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
               ),
             ),
             const SizedBox(height: 15),
-
-            
             const Text(
               'Informe:',
               style: TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 10),
-
-            
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 labelText: 'Tipo de Usuário',
@@ -73,7 +68,7 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
                   borderSide: BorderSide(color: Colors.white),
                 ),
               ),
-              dropdownColor: const Color(0xFF5CD4E4),
+              dropdownColor: const Color(0xFF4DD0E1),
               value: _selectedUserType,
               hint: const Text(
                 'Selecione',
@@ -87,15 +82,12 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
               },
               items: const [
                 DropdownMenuItem(value: 'Estudante', child: Text('Estudante')),
-                DropdownMenuItem(value: 'Colaborador', child: Text('Colaborador')),
+                DropdownMenuItem(
+                    value: 'Colaborador', child: Text('Colaborador')),
               ],
             ),
-
             const SizedBox(height: 10),
-
-            
             _buildAgeRangeDropdown(),
-
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -120,7 +112,8 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
                               userController.isLoading
                           ? null
                           : () async {
-                              final success = await userController.signInAnonymously(
+                              final success =
+                                  await userController.signInAnonymously(
                                 _selectedUserType!,
                                 ageRange: _ageRange,
                               );
@@ -159,7 +152,7 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
           borderSide: BorderSide(color: Colors.white),
         ),
       ),
-      dropdownColor: const Color(0xFF5CD4E4),
+      dropdownColor: const Color(0xFF4DD0E1),
       value: _ageRange,
       hint: const Text(
         'Selecione',

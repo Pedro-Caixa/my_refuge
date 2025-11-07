@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Importante para acessar o UserController
+import 'package:provider/provider.dart';
 import 'package:my_refuge/controllers/user_controller.dart';
 import '../template/main_template.dart';
 import '../widgets/sections/option_card.dart';
-import '../widgets/sections/streak_card.dart';
 import '../widgets/sections/custom_footer.dart';
 import '../../controllers/user_controller.dart';
 
@@ -25,12 +24,11 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _checkAndShowNotification() async {
     final userController = Provider.of<UserController>(context, listen: false);
-    
-    // Aguardar um pouco para garantir que o usuário está carregado
+
     await Future.delayed(const Duration(seconds: 1));
-    
+
     if (!mounted) return;
-    
+
     final hasChecked = await userController.hasCheckedInToday();
     if (!hasChecked && !_notificationShown) {
       _notificationShown = true;
@@ -57,16 +55,10 @@ class _HomePageState extends State<HomePage> {
     return MainTemplate(
       title: "My Refuge",
       currentIndex: 0,
-      onItemTapped: (int index) {
-        // Como a navegação já é tratada no CustomFooter,
-        // podemos deixar vazio ou adicionar lógica adicional se necessário
-      },
+      onItemTapped: (int index) {},
       customBottomNavigationBar: CustomFooter(
-        // Adicionar o CustomFooter
-        currentIndex: 0, // Índice correspondente a "Home" no menu
-        onItemTapped: (int index) {
-          // A navegação já é tratada dentro do CustomFooter, mas você pode adicionar lógica adicional se necessário
-        },
+        currentIndex: 0,
+        onItemTapped: (int index) {},
       ),
       body: Container(
         color: const Color(0xFFF4F8FB),
@@ -80,7 +72,8 @@ class _HomePageState extends State<HomePage> {
                 user != null && !user.isAnonymous && user.name.isNotEmpty
                     ? "Olá, ${user.name} 👋"
                     : "Olá 👋",
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -88,14 +81,118 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 16, color: Colors.black54),
               ),
               const SizedBox(height: 20),
+
+              // StreakCard com botão de navegação
               Consumer<UserController>(
                 builder: (context, userController, child) {
-                  return StreakCard(
-                    days: userController.currentUser?.dailyStreak ?? 0,
-                    daysToReward: 30 - (userController.currentUser?.dailyStreak ?? 0),
+                  return InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/gamification');
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF9C27B0), Color(0xFFBA68C8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purple.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "Sequência Atual",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              // Botão de seta para navegação
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_forward,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            "Continue sua jornada!",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              // Ícone de fogo
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.local_fire_department,
+                                  color: Colors.orange,
+                                  size: 32,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              // Informações de dias
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${userController.currentUser?.dailyStreak ?? 0} dias",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      "${30 - (userController.currentUser?.dailyStreak ?? 0) % 30} dias para o primeiro brinde especial 🎁",
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),
+
               const SizedBox(height: 24),
               OptionCard(
                 icon: Icons.favorite,
