@@ -11,13 +11,88 @@ import '../widgets/sections/custom_footer.dart';
 import '../../controllers/user_controller.dart';
 import '../../models/registration_data.dart';
 
-class CompleteProfilePage extends StatelessWidget {
+class CompleteProfilePage extends StatefulWidget {
   const CompleteProfilePage({Key? key}) : super(key: key);
 
   @override
+  State<CompleteProfilePage> createState() => _CompleteProfilePageState();
+}
+
+class _CompleteProfilePageState extends State<CompleteProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+
+  // Controllers para os campos de texto
+  late TextEditingController _emailController;
+  late TextEditingController _nameController;
+  late TextEditingController _professionController;
+  late TextEditingController _availableTimeController;
+  late TextEditingController _hobbiesController;
+  late TextEditingController _passwordController;
+  late TextEditingController _confirmPasswordController;
+
+  // Valores dos dropdowns
+  String? _selectedUserType;
+  String? _selectedAgeRange;
+  String? _selectedLivesAlone;
+  String? _selectedGender;
+  bool _receivesNotifications = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+    _loadUserData();
+  }
+
+  void _initializeControllers() {
+    _emailController = TextEditingController();
+    _nameController = TextEditingController();
+    _professionController = TextEditingController();
+    _availableTimeController = TextEditingController();
+    _hobbiesController = TextEditingController();
+    _passwordController = TextEditingController();
+    _confirmPasswordController = TextEditingController();
+  }
+
+  void _loadUserData() {
+    final userController = Provider.of<UserController>(context, listen: false);
+    final user = userController.currentUser;
+
+    if (user != null && !user.isAnonymous) {
+      setState(() {
+        _emailController.text = user.email ?? '';
+        _nameController.text = user.name;
+        _professionController.text = user.profession ?? '';
+        _availableTimeController.text = user.availableTime ?? '';
+        _hobbiesController.text = user.hobbies ?? '';
+        _selectedUserType = user.userType.isNotEmpty ? user.userType : null;
+        _selectedAgeRange = user.ageRange.isNotEmpty ? user.ageRange : null;
+        _selectedLivesAlone = user.livesAlone;
+        _selectedGender = user.gender;
+        _receivesNotifications = user.receivesNotifications;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _nameController.dispose();
+    _professionController.dispose();
+    _availableTimeController.dispose();
+    _hobbiesController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final userController = Provider.of<UserController>(context);
+    final isAnonymous = userController.currentUser?.isAnonymous ?? true;
+
     return MainTemplate(
-      title: "Completar Perfil",
+      title: isAnonymous ? "Completar Perfil" : "Meu Perfil",
       currentIndex: 5,
       onItemTapped: (int index) {},
       backgroundColor: const Color(0xFFF5F8FC),
@@ -27,21 +102,28 @@ class CompleteProfilePage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildProfileForm(context),
-            const SizedBox(height: 16),
-            _buildContinueAnonymousButton(context),
-          ],
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(isAnonymous),
+              const SizedBox(height: 20),
+              _buildProfileForm(context, isAnonymous),
+              const SizedBox(height: 16),
+              if (isAnonymous) _buildContinueAnonymousButton(context),
+              if (!isAnonymous) _buildLogoutButton(context),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isAnonymous) {
+    final userController = Provider.of<UserController>(context);
+    final userName = userController.currentUser?.name ?? "Usuário";
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -54,21 +136,27 @@ class CompleteProfilePage extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Icon(Icons.person_add, color: Colors.white, size: 40),
-          SizedBox(height: 12),
+        children: [
+          Icon(
+            isAnonymous ? Icons.person_add : Icons.account_circle,
+            color: Colors.white,
+            size: 40,
+          ),
+          const SizedBox(height: 12),
           Text(
-            "Complete seu Perfil",
-            style: TextStyle(
+            isAnonymous ? "Complete seu Perfil" : "Olá, $userName!",
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            "Salve seus dados para não perder seu progresso e personalizar sua experiência no My Refuge",
-            style: TextStyle(
+            isAnonymous
+                ? "Salve seus dados para não perder seu progresso e personalizar sua experiência no My Refuge"
+                : "Gerencie suas informações e preferências",
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
             ),
@@ -78,7 +166,7 @@ class CompleteProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileForm(BuildContext context) {
+  Widget _buildProfileForm(BuildContext context, bool isAnonymous) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -94,22 +182,19 @@ class CompleteProfilePage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildRequiredFields(context),
+          _buildRequiredFields(context, isAnonymous),
           const SizedBox(height: 20),
           _buildOptionalFields(context),
           const SizedBox(height: 16),
-          _buildNotificationsCheckbox(context),
+          _buildNotificationsCheckbox(),
           const SizedBox(height: 16),
-          _buildSaveButton(context),
+          _buildSaveButton(context, isAnonymous),
         ],
       ),
     );
   }
 
-  Widget _buildRequiredFields(BuildContext context) {
-    final registrationData =
-        Provider.of<RegistrationData>(context, listen: false);
-
+  Widget _buildRequiredFields(BuildContext context, bool isAnonymous) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -122,52 +207,85 @@ class CompleteProfilePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        EmailInput(
-          onChanged: (value) => registrationData.email = value,
-        ),
-        const SizedBox(height: 12),
-        PasswordInput(
-          onChanged: (value) => registrationData.password = value,
-        ),
-        const SizedBox(height: 12),
-        ConfirmPasswordInput(
-          onChanged: (value) => registrationData.confirmPassword = value,
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
+        TextFormField(
+          controller: _emailController,
           decoration: InputDecoration(
-            labelText: "Tipo de Usuário *",
+            labelText: "Email *",
+            hintText: "seu@email.com",
+            prefixIcon: const Icon(Icons.email),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          value: registrationData.userType.isEmpty
-              ? null
-              : registrationData.userType,
+          keyboardType: TextInputType.emailAddress,
+          enabled: isAnonymous,
+        ),
+        const SizedBox(height: 12),
+        if (isAnonymous) ...[
+          TextFormField(
+            controller: _passwordController,
+            decoration: InputDecoration(
+              labelText: "Senha *",
+              hintText: "Mínimo 6 caracteres",
+              prefixIcon: const Icon(Icons.lock),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            obscureText: true,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _confirmPasswordController,
+            decoration: InputDecoration(
+              labelText: "Confirmar Senha *",
+              hintText: "Digite a senha novamente",
+              prefixIcon: const Icon(Icons.lock_outline),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            obscureText: true,
+          ),
+          const SizedBox(height: 12),
+        ],
+        DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            labelText: "Tipo de Usuário *",
+            prefixIcon: const Icon(Icons.badge),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          value: _selectedUserType,
           items: const [
             DropdownMenuItem(value: "Estudante", child: Text("Estudante")),
             DropdownMenuItem(value: "Colaborador", child: Text("Colaborador")),
           ],
-          onChanged: (value) =>
-              registrationData.userType = value ?? registrationData.userType,
+          onChanged: (value) => setState(() => _selectedUserType = value),
         ),
         const SizedBox(height: 12),
-        TextInput(
-          labelText: "Nome *",
-          hintText: "Seu nome",
-          onChanged: (value) => registrationData.name = value,
+        TextFormField(
+          controller: _nameController,
+          decoration: InputDecoration(
+            labelText: "Nome *",
+            hintText: "Seu nome",
+            prefixIcon: const Icon(Icons.person),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           decoration: InputDecoration(
             labelText: "Faixa Etária *",
+            prefixIcon: const Icon(Icons.cake),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          value: registrationData.ageRange.isEmpty
-              ? null
-              : registrationData.ageRange,
+          value: _selectedAgeRange,
           items: const [
             DropdownMenuItem(value: '18-25', child: Text('18-25 anos')),
             DropdownMenuItem(value: '26-35', child: Text('26-35 anos')),
@@ -175,17 +293,13 @@ class CompleteProfilePage extends StatelessWidget {
             DropdownMenuItem(value: '46-60', child: Text('46-60 anos')),
             DropdownMenuItem(value: '61+', child: Text('61+ anos')),
           ],
-          onChanged: (value) =>
-              registrationData.ageRange = value ?? registrationData.ageRange,
+          onChanged: (value) => setState(() => _selectedAgeRange = value),
         ),
       ],
     );
   }
 
   Widget _buildOptionalFields(BuildContext context) {
-    final registrationData =
-        Provider.of<RegistrationData>(context, listen: false);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -197,106 +311,110 @@ class CompleteProfilePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        TextInput(
-          labelText: "Profissão",
-          hintText: "Sua profissão",
-          onChanged: (value) => registrationData.profession = value,
+        TextFormField(
+          controller: _professionController,
+          decoration: InputDecoration(
+            labelText: "Profissão",
+            hintText: "Sua profissão",
+            prefixIcon: const Icon(Icons.work),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           decoration: InputDecoration(
             labelText: "Mora Sozinho",
+            prefixIcon: const Icon(Icons.home),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          value: registrationData.livesAlone,
+          value: _selectedLivesAlone,
           items: const [
             DropdownMenuItem(value: "sim", child: Text("Sim")),
             DropdownMenuItem(value: "nao", child: Text("Não")),
           ],
-          onChanged: (value) => registrationData.livesAlone =
-              value ?? registrationData.livesAlone,
+          onChanged: (value) => setState(() => _selectedLivesAlone = value),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           decoration: InputDecoration(
             labelText: "Sexo",
+            prefixIcon: const Icon(Icons.person_outline),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          value: registrationData.gender,
+          value: _selectedGender,
           items: const [
             DropdownMenuItem(value: "masc", child: Text("Masculino")),
             DropdownMenuItem(value: "fem", child: Text("Feminino")),
             DropdownMenuItem(value: "outro", child: Text("Outro")),
           ],
-          onChanged: (value) =>
-              registrationData.gender = value ?? registrationData.gender,
+          onChanged: (value) => setState(() => _selectedGender = value),
         ),
         const SizedBox(height: 12),
-        TextInput(
-          labelText: "Tempo Disponível",
-          hintText: "Ex: 2 horas por dia",
-          onChanged: (value) => registrationData.availableTime = value,
+        TextFormField(
+          controller: _availableTimeController,
+          decoration: InputDecoration(
+            labelText: "Tempo Disponível",
+            hintText: "Ex: 2 horas por dia",
+            prefixIcon: const Icon(Icons.access_time),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
-        TextInput(
-          labelText: "Hobbies",
-          hintText: "Seus hobbies e interesses",
-          onChanged: (value) => registrationData.hobbies = value,
+        TextFormField(
+          controller: _hobbiesController,
+          decoration: InputDecoration(
+            labelText: "Hobbies",
+            hintText: "Seus hobbies e interesses",
+            prefixIcon: const Icon(Icons.favorite),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          maxLines: 2,
         ),
       ],
     );
   }
 
-  Widget _buildNotificationsCheckbox(BuildContext context) {
-    final registrationData =
-        Provider.of<RegistrationData>(context, listen: false);
-
-    return CheckboxInput(
-      value: registrationData.receivesNotifications,
-      label: "Receber notificações para lembrá-lo do bem-estar",
+  Widget _buildNotificationsCheckbox() {
+    return CheckboxListTile(
+      value: _receivesNotifications,
       onChanged: (value) =>
-          registrationData.receivesNotifications = value ?? true,
+          setState(() => _receivesNotifications = value ?? true),
+      title: const Text("Receber notificações para lembrá-lo do bem-estar"),
+      controlAffinity: ListTileControlAffinity.leading,
+      activeColor: Colors.deepPurple,
     );
   }
 
-  Widget _buildSaveButton(BuildContext context) {
-    final registrationData =
-        Provider.of<RegistrationData>(context, listen: false);
+  Widget _buildSaveButton(BuildContext context, bool isAnonymous) {
     final userController = Provider.of<UserController>(context);
 
     return userController.isLoading
         ? const Center(child: CircularProgressIndicator())
-        : Column(
-            children: [
-              SaveButton(
-                text: "Salvar Perfil",
-                onPressed: () async {
-                  if (_validateRegistration(registrationData, context)) {
-                    final success = await userController
-                        .completeAnonymousProfile(registrationData);
-
-                    if (success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Perfil salvo com sucesso! 🎉'),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      Navigator.pushReplacementNamed(context, '/home');
-                    } else if (userController.errorMessage != null &&
-                        context.mounted) {
-                      _showValidationError(
-                          context, userController.errorMessage!);
-                    }
-                  }
-                },
+        : SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: () => _saveProfile(context, isAnonymous),
+              icon: const Icon(Icons.save),
+              label: Text(isAnonymous ? "Salvar Perfil" : "Atualizar Perfil"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-            ],
+            ),
           );
   }
 
@@ -316,7 +434,117 @@ class CompleteProfilePage extends StatelessWidget {
     );
   }
 
-  bool _validateRegistration(RegistrationData data, BuildContext context) {
+  Widget _buildLogoutButton(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: 20),
+        child: ElevatedButton.icon(
+          onPressed: () => _showLogoutDialog(context),
+          icon: const Icon(Icons.logout),
+          label: const Text("Sair da Conta"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Sair da Conta"),
+          content: const Text("Tem certeza que deseja sair da sua conta?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancelar"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _performLogout(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text("Sair"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _performLogout(BuildContext context) async {
+    final userController = Provider.of<UserController>(context, listen: false);
+
+    await userController.logout();
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Logout realizado com sucesso!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
+    }
+  }
+
+  Future<void> _saveProfile(BuildContext context, bool isAnonymous) async {
+    final userController = Provider.of<UserController>(context, listen: false);
+    final registrationData =
+        Provider.of<RegistrationData>(context, listen: false);
+
+    // Preencher o RegistrationData com os dados do formulário
+    registrationData.email = _emailController.text;
+    registrationData.name = _nameController.text;
+    registrationData.password = _passwordController.text;
+    registrationData.confirmPassword = _confirmPasswordController.text;
+    registrationData.userType = _selectedUserType ?? '';
+    registrationData.ageRange = _selectedAgeRange ?? '';
+    registrationData.profession = _professionController.text;
+    registrationData.livesAlone = _selectedLivesAlone ?? '';
+    registrationData.gender = _selectedGender ?? '';
+    registrationData.availableTime = _availableTimeController.text;
+    registrationData.hobbies = _hobbiesController.text;
+    registrationData.receivesNotifications = _receivesNotifications;
+
+    if (_validateRegistration(registrationData, context, isAnonymous)) {
+      final success = isAnonymous
+          ? await userController.completeAnonymousProfile(registrationData)
+          : await userController.updateUserProfile(registrationData);
+
+      if (success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isAnonymous
+                ? 'Perfil salvo com sucesso! 🎉'
+                : 'Perfil atualizado com sucesso! ✅'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        if (isAnonymous) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      } else if (userController.errorMessage != null && context.mounted) {
+        _showValidationError(context, userController.errorMessage!);
+      }
+    }
+  }
+
+  bool _validateRegistration(
+      RegistrationData data, BuildContext context, bool isAnonymous) {
     if (data.userType.isEmpty) {
       _showValidationError(context, 'Tipo de usuário é obrigatório');
       return false;
@@ -333,14 +561,19 @@ class CompleteProfilePage extends StatelessWidget {
       _showValidationError(context, 'Email inválido');
       return false;
     }
-    if (data.password.isEmpty || data.password.length < 6) {
-      _showValidationError(context, 'A senha deve ter pelo menos 6 caracteres');
-      return false;
+
+    if (isAnonymous) {
+      if (data.password.isEmpty || data.password.length < 6) {
+        _showValidationError(
+            context, 'A senha deve ter pelo menos 6 caracteres');
+        return false;
+      }
+      if (data.password != data.confirmPassword) {
+        _showValidationError(context, 'As senhas não coincidem');
+        return false;
+      }
     }
-    if (data.password != data.confirmPassword) {
-      _showValidationError(context, 'As senhas não coincidem');
-      return false;
-    }
+
     return true;
   }
 

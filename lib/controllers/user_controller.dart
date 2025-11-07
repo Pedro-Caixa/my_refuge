@@ -53,7 +53,7 @@ class UserController extends ChangeNotifier {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         _currentUser = RegistrationData.fromMap(data, uid);
         print("Dados do usuário carregados com sucesso");
-        
+
         // Verificar e resetar streak se necessário
         await checkAndResetStreak();
       } else {
@@ -186,6 +186,55 @@ class UserController extends ChangeNotifier {
       return true;
     } catch (e) {
       _setError('Erro ao atualizar usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Atualiza o perfil do usuário (para usuários já registrados)
+  Future<bool> updateUserProfile(RegistrationData registrationData) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final user = _auth.currentUser;
+      if (user == null) {
+        _setError('Usuário não autenticado');
+        return false;
+      }
+
+      if (_currentUser == null) {
+        _setError('Dados do usuário não carregados');
+        return false;
+      }
+
+      // Preparar dados para atualização
+      Map<String, dynamic> updateData = {
+        'name': registrationData.name,
+        'userType': registrationData.userType,
+        'ageRange': registrationData.ageRange,
+        'profession': registrationData.profession,
+        'livesAlone': registrationData.livesAlone,
+        'gender': registrationData.gender,
+        'availableTime': registrationData.availableTime,
+        'hobbies': registrationData.hobbies,
+        'receivesNotifications': registrationData.receivesNotifications,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      // Remover campos vazios/nulos
+      updateData.removeWhere((key, value) => value == null || value == '');
+
+      // Atualizar no Firestore
+      await _firestore.collection('users').doc(user.uid).update(updateData);
+
+      // Recarregar dados do usuário
+      await _loadCurrentUser(user.uid);
+
+      return true;
+    } catch (e) {
+      _setError('Erro ao atualizar perfil: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -613,19 +662,21 @@ class UserController extends ChangeNotifier {
   Future<void> _updateStreak(String uid) async {
     try {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final startOfYesterday = DateTime(yesterday.year, yesterday.month, yesterday.day);
+      final startOfYesterday =
+          DateTime(yesterday.year, yesterday.month, yesterday.day);
       final endOfYesterday = startOfYesterday.add(const Duration(days: 1));
 
       final yesterdayCheckIn = await _firestore
           .collection('users')
           .doc(uid)
           .collection('checkins')
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYesterday))
+          .where('date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYesterday))
           .where('date', isLessThan: Timestamp.fromDate(endOfYesterday))
           .get();
 
-      int newStreak = yesterdayCheckIn.docs.isNotEmpty 
-          ? (_currentUser?.dailyStreak ?? 0) + 1 
+      int newStreak = yesterdayCheckIn.docs.isNotEmpty
+          ? (_currentUser?.dailyStreak ?? 0) + 1
           : 1;
 
       await _firestore.collection('users').doc(uid).update({
@@ -647,14 +698,16 @@ class UserController extends ChangeNotifier {
       if (user == null || _currentUser == null) return;
 
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final startOfYesterday = DateTime(yesterday.year, yesterday.month, yesterday.day);
+      final startOfYesterday =
+          DateTime(yesterday.year, yesterday.month, yesterday.day);
       final endOfYesterday = startOfYesterday.add(const Duration(days: 1));
 
       final yesterdayCheckIn = await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('checkins')
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYesterday))
+          .where('date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYesterday))
           .where('date', isLessThan: Timestamp.fromDate(endOfYesterday))
           .get();
 
