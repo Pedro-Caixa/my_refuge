@@ -7,6 +7,7 @@ import '../widgets/sections/history_card.dart';
 import '../widgets/buttons/save_button.dart';
 import '../widgets/sections/custom_footer.dart';
 import '../../controllers/user_controller.dart';
+import '../../models/check_in.dart';
 
 class CheckInPage extends StatefulWidget {
   const CheckInPage({super.key});
@@ -18,6 +19,81 @@ class CheckInPage extends StatefulWidget {
 class _CheckInPageState extends State<CheckInPage> {
   int? _selectedMood;
   String _note = '';
+  List<CheckIn> _recentCheckIns = [];
+  bool _isLoadingHistory = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCheckInHistory();
+  }
+
+  Future<void> _loadCheckInHistory() async {
+    final userController = Provider.of<UserController>(context, listen: false);
+    try {
+      final checkIns = await userController.getCheckIns(limit: 7); // Últimos 7 dias
+      setState(() {
+        _recentCheckIns = checkIns;
+        _isLoadingHistory = false;
+      });
+    } catch (e) {
+      print('Erro ao carregar histórico: $e');
+      setState(() {
+        _isLoadingHistory = false;
+      });
+    }
+  }
+
+  String _getMoodText(int mood) {
+    switch (mood) {
+      case 1: return 'Ansioso';
+      case 2: return 'Irritado';
+      case 3: return 'Triste';
+      case 4: return 'Neutro';
+      case 5: return 'Calmo';
+      case 6: return 'Feliz';
+      default: return 'Desconhecido';
+    }
+  }
+
+  IconData _getMoodIcon(int mood) {
+    switch (mood) {
+      case 1: return Icons.sentiment_very_dissatisfied; // Ansioso
+      case 2: return Icons.sentiment_dissatisfied; // Irritado
+      case 3: return Icons.sentiment_dissatisfied; // Triste
+      case 4: return Icons.sentiment_neutral; // Neutro
+      case 5: return Icons.sentiment_satisfied; // Calmo
+      case 6: return Icons.sentiment_very_satisfied; // Feliz
+      default: return Icons.sentiment_neutral;
+    }
+  }
+
+  Color _getMoodColor(int mood) {
+    switch (mood) {
+      case 1: return Colors.red; // Ansioso
+      case 2: return Colors.orange; // Irritado
+      case 3: return Colors.orange; // Triste
+      case 4: return Colors.yellow; // Neutro
+      case 5: return Colors.lightGreen; // Calmo
+      case 6: return Colors.green; // Feliz
+      default: return Colors.grey;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final checkInDate = DateTime(date.year, date.month, date.day);
+    
+    final difference = today.difference(checkInDate).inDays;
+    
+    switch (difference) {
+      case 0: return 'Hoje';
+      case 1: return 'Ontem';
+      case 2: return 'Anteontem';
+      default: return '${difference} dias atrás';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,18 +151,27 @@ class _CheckInPageState extends State<CheckInPage> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            const HistoryCard(
-              day: "Ontem",
-              status: "Bem",
-              icon: Icons.favorite_border,
-              color: Colors.green,
-            ),
-            const HistoryCard(
-              day: "Anteontem",
-              status: "Excelente",
-              icon: Icons.sentiment_satisfied,
-              color: Colors.green,
-            ),
+            _isLoadingHistory
+                ? const Center(child: CircularProgressIndicator())
+                : _recentCheckIns.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Nenhum check-in encontrado ainda.\nFaça seu primeiro check-in hoje!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : Column(
+                        children: _recentCheckIns.map((checkIn) {
+                          return HistoryCard(
+                            day: _formatDate(checkIn.date),
+                            status: _getMoodText(checkIn.mood),
+                            icon: _getMoodIcon(checkIn.mood),
+                            color: _getMoodColor(checkIn.mood),
+                            note: checkIn.note,
+                          );
+                        }).toList(),
+                      ),
             const SizedBox(height: 30),
             SaveButton(
               onPressed: _selectedMood == null || userController.isLoading
@@ -109,6 +194,8 @@ class _CheckInPageState extends State<CheckInPage> {
                           _selectedMood = null;
                           _note = '';
                         });
+                        // Recarregar histórico para mostrar o novo check-in
+                        _loadCheckInHistory();
                       }
                     },
             ),
