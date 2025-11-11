@@ -79,7 +79,7 @@ class _CustomFooterState extends State<CustomFooter> {
                   label: Text('!'),
                   child: Icon(Icons.favorite),
                 ),
-          label: "Diario do Humor",
+          label: "Diário",
         ),
         const BottomNavigationBarItem(
           icon: Icon(Icons.self_improvement),
@@ -87,11 +87,11 @@ class _CustomFooterState extends State<CustomFooter> {
         ),
         const BottomNavigationBarItem(
           icon: Icon(Icons.sunny),
-          label: "Frases Motivação",
+          label: "Frases",
         ),
         const BottomNavigationBarItem(
           icon: Icon(Icons.book),
-          label: "Marcar Consulta",
+          label: "Consulta",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_pin_circle),
