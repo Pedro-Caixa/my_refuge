@@ -16,6 +16,7 @@ class UserController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _currentUser != null;
+  bool get isAdmin => _currentUser?.isAdmin ?? false;
 
   UserController() {
     try {
@@ -54,12 +55,9 @@ class UserController extends ChangeNotifier {
         _currentUser = RegistrationData.fromMap(data, uid);
         print("Dados do usuário carregados com sucesso");
 
-        // Verificar e resetar streak se necessário
         await checkAndResetStreak();
       } else {
         print("Documento do usuário não existe no Firestore");
-        // Usuário existe no Auth mas não no Firestore
-        // Vamos criar um perfil básico
         final User? authUser = _auth.currentUser;
         if (authUser != null && authUser.isAnonymous) {
           print("Criando perfil básico para usuário anônimo");
@@ -103,18 +101,17 @@ class UserController extends ChangeNotifier {
               email: registrationData.email,
               password: registrationData.password);
 
-      // Use toMap() method and add createdAt field
       Map<String, dynamic> userData = registrationData.toMap();
       userData['createdAt'] = FieldValue.serverTimestamp();
       userData['isAnonymous'] = false;
       userData['dailyStreak'] = 0;
+      userData['isAdmin'] = false;
 
       await _firestore
           .collection('users')
           .doc(userCredential.user?.uid)
           .set(userData);
 
-      // Atualizar o usuário atual após o registro
       await _loadCurrentUser(userCredential.user!.uid);
 
       return true;
@@ -168,11 +165,9 @@ class UserController extends ChangeNotifier {
         return false;
       }
 
-      // Use toMap() method and add updatedAt field
       Map<String, dynamic> updateData = registrationData.toMap();
       updateData['updatedAt'] = FieldValue.serverTimestamp();
 
-      // Remove email field as we don't want to update it this way
       updateData.remove('email');
 
       await _firestore
@@ -180,7 +175,6 @@ class UserController extends ChangeNotifier {
           .doc(_auth.currentUser!.uid)
           .update(updateData);
 
-      // Atualizar o usuário atual após a atualização
       await _loadCurrentUser(_auth.currentUser!.uid);
 
       return true;
@@ -192,7 +186,6 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  /// Atualiza o perfil do usuário (para usuários já registrados)
   Future<bool> updateUserProfile(RegistrationData registrationData) async {
     try {
       _setLoading(true);
@@ -418,8 +411,6 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  /// Completa o perfil de um usuário anônimo com todas as informações
-  /// Converte o usuário anônimo em uma conta permanente
   Future<bool> completeAnonymousProfile(RegistrationData data) async {
     try {
       _setLoading(true);
@@ -446,21 +437,17 @@ class UserController extends ChangeNotifier {
         return false;
       }
 
-      // Vincular conta de email/senha ao usuário anônimo atual
       AuthCredential credential = EmailAuthProvider.credential(
           email: data.email, password: data.password);
       await user.linkWithCredential(credential);
 
-      // Preparar dados completos para atualizar no Firestore
       Map<String, dynamic> updateData = data.toMap();
       updateData['isAnonymous'] = false;
       updateData['convertedAt'] = FieldValue.serverTimestamp();
       updateData['updatedAt'] = FieldValue.serverTimestamp();
 
-      // Atualizar todos os dados do usuário no Firestore
       await _firestore.collection('users').doc(user.uid).update(updateData);
 
-      // Recarregar dados do usuário
       await _loadCurrentUser(user.uid);
 
       return true;
@@ -481,12 +468,10 @@ class UserController extends ChangeNotifier {
     }
   }
 
-  /// Verifica se o usuário atual é anônimo
   bool isAnonymousUser() {
     return _auth.currentUser?.isAnonymous ?? false;
   }
 
-  /// Converte um usuário anônimo em uma conta permanente com email/senha
   Future<bool> convertAnonymousUser(
       String email, String password, String confirmPassword) async {
     try {
@@ -514,19 +499,16 @@ class UserController extends ChangeNotifier {
         return false;
       }
 
-      // Vincular conta de email/senha ao usuário anônimo atual
       AuthCredential credential =
           EmailAuthProvider.credential(email: email, password: password);
       await user.linkWithCredential(credential);
 
-      // Atualizar dados do usuário no Firestore
       await _firestore.collection('users').doc(user.uid).update({
         'email': email,
         'isAnonymous': false,
         'convertedAt': FieldValue.serverTimestamp(),
       });
 
-      // Recarregar dados do usuário
       await _loadCurrentUser(user.uid);
 
       return true;
@@ -721,6 +703,40 @@ class UserController extends ChangeNotifier {
       }
     } catch (e) {
       print('Erro ao verificar/resetar streak: $e');
+    }
+  }
+
+  Future<bool> promoteToAdmin(String email) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        _setError('Usuário não encontrado');
+        return false;
+      }
+
+      final userDoc = querySnapshot.docs.first;
+      await _firestore.collection('users').doc(userDoc.id).update({
+        'isAdmin': true,
+      });
+
+      if (_currentUser?.email == email) {
+        _currentUser!.isAdmin = true;
+        notifyListeners();
+      }
+
+      return true;
+    } catch (e) {
+      _setError('Erro ao promover usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
