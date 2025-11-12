@@ -15,9 +15,9 @@ class RegistrationData extends ChangeNotifier {
   bool _receivesNotifications = true;
   int _dailyStreak = 0;
   bool _isAnonymous = false;
+  bool _isAdmin = false;
   String _uid = '';
 
-  // Getters e Setters para todos os campos
   String get email => _email;
   set email(String value) {
     if (_email != value) {
@@ -130,6 +130,14 @@ class RegistrationData extends ChangeNotifier {
     }
   }
 
+  bool get isAdmin => _isAdmin;
+  set isAdmin(bool value) {
+    if (_isAdmin != value) {
+      _isAdmin = value;
+      notifyListeners();
+    }
+  }
+
   String get uid => _uid;
   set uid(String value) {
     if (_uid != value) {
@@ -162,6 +170,7 @@ class RegistrationData extends ChangeNotifier {
       'receivesNotifications': _receivesNotifications,
       'dailyStreak': _dailyStreak,
       'isAnonymous': _isAnonymous,
+      'isAdmin': _isAdmin,
     };
   }
 
@@ -180,6 +189,7 @@ class RegistrationData extends ChangeNotifier {
       ..receivesNotifications = map['receivesNotifications'] ?? true
       ..dailyStreak = map['dailyStreak'] ?? 0
       ..isAnonymous = map['isAnonymous'] ?? false
+      ..isAdmin = map['isAdmin'] ?? false
       ..uid = uid;
     return data;
   }

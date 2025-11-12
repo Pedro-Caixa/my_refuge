@@ -194,6 +194,20 @@ class _HomePageState extends State<HomePage> {
               ),
 
               const SizedBox(height: 24),
+
+              if (userController.isAdmin) ...[
+                OptionCard(
+                  icon: Icons.dashboard,
+                  iconColor: Colors.purple,
+                  title: "Dashboard Admin",
+                  subtitle: "Acesse o painel administrativo",
+                  onTap: () {
+                    Navigator.pushNamed(context, '/home');
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+
               OptionCard(
                 icon: Icons.favorite,
                 iconColor: Colors.blue,
