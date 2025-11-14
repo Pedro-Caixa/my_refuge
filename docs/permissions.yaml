@@ -1,0 +1,28 @@
+app:
+  id: com.myrefuge.app
+  name: My Refuge
+
+permissions:
+  - name: android.permission.READ_MEDIA_IMAGES
+    type: dangerous
+    feature: Anexar imagens aos registros do diário
+    data_min: Imagem local escolhida pelo usuário
+    request_timing: Ao clicar em "Adicionar imagem"
+    rationale: >
+      Permite que o usuário adicione uma foto à sua anotação.
+      Nenhuma imagem é enviada a servidores.
+    alternative: Registrar apenas texto, sem anexar imagem
+    storage: Armazenamento local criptografado (somente leitura das imagens)
+    play_policy: Declaração de acesso a fotos no Google Play, uso restrito e contextual
+
+  - name: android.permission.WRITE_EXTERNAL_STORAGE
+    type: dangerous
+    feature: Salvar registros localmente
+    data_min: Texto e metadados do diário
+    request_timing: No primeiro salvamento de registro
+    rationale: >
+      Necessário para gravar o diário no dispositivo,
+      mantendo os dados privados e sob controle do usuário.
+    alternative: Usar cache interno do app, sem persistência entre sessões
+    storage: Armazenamento interno do app, sem compartilhamento externo
+    play_policy: Política de acesso a armazenamento, uso mínimo e necessário

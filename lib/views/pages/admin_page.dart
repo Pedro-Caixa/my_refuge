@@ -267,10 +267,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
               },
             ),
           ),
-          rightTitles: const AxisTitles(
+          rightTitles: AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
-          topTitles: const AxisTitles(
+          topTitles: AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
         ),
@@ -294,7 +294,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             color: Colors.blue[700],
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: true),
+            dotData: FlDotData(show: true),
             belowBarData: BarAreaData(
               show: true,
               color: Colors.blue[100]?.withOpacity(0.3),
@@ -348,10 +348,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
               },
             ),
           ),
-          rightTitles: const AxisTitles(
+          rightTitles: AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
-          topTitles: const AxisTitles(
+          topTitles: AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
         ),

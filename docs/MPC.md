@@ -1,0 +1,6 @@
+# Matriz de Permissões e Compliance — My Refuge
+
+| Feature principal | Dado mínimo | Permissão | Tipo (inst./exec./esp.) | Pedido em contexto (mensagem) | Alternativa digna | Proteção/ret. | Política Play / Declaração |
+|-------------------|-------------|------------|--------------------------|-------------------------------|-------------------|----------------|-----------------------------|
+| Registrar sentimentos e anexar imagens | Texto e imagem local | READ_MEDIA_IMAGES (Android 13+) | Execução (“dangerous”) | “Para anexar fotos às suas anotações, o My Refuge precisa acessar suas imagens. Nenhuma foto será compartilhada.” | O usuário pode escrever apenas o texto do sentimento, sem adicionar imagem | Armazenamento local criptografado, sem upload externo | Política de acesso a fotos — declaração de uso limitado no console do Play |
+| Salvar registros do diário | Texto local | WRITE_EXTERNAL_STORAGE (Android ≤12) | Execução (“dangerous”) | “O My Refuge precisa salvar seus registros localmente. As informações permanecem apenas no seu dispositivo.” | Registros armazenados temporariamente em cache interno | Dados criptografados e apagados com a exclusão da entrada | Política de acesso a armazenamento — uso restrito e transparente ao usuário |
