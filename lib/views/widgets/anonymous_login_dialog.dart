@@ -12,7 +12,43 @@ class AnonymousLoginDialog extends StatefulWidget {
 
 class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
   String? _selectedUserType;
-  String? _ageRange;
+  DateTime? _birthDate;
+  final TextEditingController _dateController = TextEditingController();
+
+  @override
+  void dispose() {
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1924),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF4DD0E1),
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _birthDate) {
+      setState(() {
+        _birthDate = picked;
+        _dateController.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +123,26 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
               ],
             ),
             const SizedBox(height: 10),
-            _buildAgeRangeDropdown(),
+            TextField(
+              controller: _dateController,
+              decoration: InputDecoration(
+                labelText: 'Data de Nascimento',
+                labelStyle: const TextStyle(color: Colors.white),
+                hintText: 'DD/MM/AAAA',
+                hintStyle: const TextStyle(color: Colors.white54),
+                suffixIcon:
+                    const Icon(Icons.calendar_today, color: Colors.white),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white54),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white),
+                ),
+              ),
+              style: const TextStyle(color: Colors.white),
+              readOnly: true,
+              onTap: () => _selectDate(context),
+            ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -108,14 +163,18 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
                         foregroundColor: Colors.black,
                       ),
                       onPressed: _selectedUserType == null ||
-                              _ageRange == null ||
+                              _birthDate == null ||
                               userController.isLoading
                           ? null
                           : () async {
+                              // Formata a data de nascimento (ISO 8601)
+                              final birthDateString =
+                                  _birthDate!.toIso8601String();
+
                               final success =
                                   await userController.signInAnonymously(
                                 _selectedUserType!,
-                                ageRange: _ageRange,
+                                ageRange: birthDateString,
                               );
 
                               if (success && mounted) {
@@ -137,40 +196,6 @@ class _AnonymousLoginDialogState extends State<AnonymousLoginDialog> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildAgeRangeDropdown() {
-    return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
-        labelText: 'Faixa Etária',
-        labelStyle: const TextStyle(color: Colors.white),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white54),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white),
-        ),
-      ),
-      dropdownColor: const Color(0xFF4DD0E1),
-      value: _ageRange,
-      hint: const Text(
-        'Selecione',
-        style: TextStyle(color: Colors.white),
-      ),
-      style: const TextStyle(color: Colors.white),
-      onChanged: (value) {
-        setState(() {
-          _ageRange = value;
-        });
-      },
-      items: const [
-        DropdownMenuItem(value: '18-25', child: Text('18-25 anos')),
-        DropdownMenuItem(value: '26-35', child: Text('26-35 anos')),
-        DropdownMenuItem(value: '36-45', child: Text('36-45 anos')),
-        DropdownMenuItem(value: '46-60', child: Text('46-60 anos')),
-        DropdownMenuItem(value: '61+', child: Text('61+ anos')),
-      ],
     );
   }
 }
