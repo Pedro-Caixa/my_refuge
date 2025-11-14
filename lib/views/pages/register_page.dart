@@ -13,8 +13,56 @@ import '../widgets/anonymous_login_dialog.dart';
 import '../../controllers/user_controller.dart';
 import '../../models/registration_data.dart';
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  DateTime? _birthDate;
+  final TextEditingController _dateController = TextEditingController();
+
+  @override
+  void dispose() {
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1924),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF4DD0E1),
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _birthDate) {
+      setState(() {
+        _birthDate = picked;
+        _dateController.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+
+        // Salva a data no formato ISO no RegistrationData
+        final registrationData =
+            Provider.of<RegistrationData>(context, listen: false);
+        registrationData.ageRange = picked.toIso8601String();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +86,7 @@ class RegisterScreen extends StatelessWidget {
                 context: context,
                 builder: (context) => const AnonymousLoginDialog(),
               );
-              
+
               // Se o login for bem-sucedido, navegar para a página inicial
               if (result == true && context.mounted) {
                 Navigator.pushReplacementNamed(context, '/home');
@@ -110,11 +158,12 @@ class RegisterScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          value: registrationData.userType.isEmpty ? null : registrationData.userType,
+          value: registrationData.userType.isEmpty
+              ? null
+              : registrationData.userType,
           items: const [
             DropdownMenuItem(value: "Estudante", child: Text("Estudante")),
-            DropdownMenuItem(
-                value: "Colaborador", child: Text("Colaborador")),
+            DropdownMenuItem(value: "Colaborador", child: Text("Colaborador")),
           ],
           onChanged: (value) =>
               registrationData.userType = value ?? registrationData.userType,
@@ -126,22 +175,18 @@ class RegisterScreen extends StatelessWidget {
           onChanged: (value) => registrationData.name = value,
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
+        TextField(
+          controller: _dateController,
           decoration: InputDecoration(
-            labelText: "Faixa Etária *",
+            labelText: 'Data de Nascimento *',
+            hintText: 'DD/MM/AAAA',
+            suffixIcon: const Icon(Icons.calendar_today),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          value: registrationData.ageRange.isEmpty ? null : registrationData.ageRange,
-          items: const [
-            DropdownMenuItem(value: '18-25', child: Text('18-25 anos')),
-            DropdownMenuItem(value: '26-35', child: Text('26-35 anos')),
-            DropdownMenuItem(value: '36-45', child: Text('36-45 anos')),
-            DropdownMenuItem(value: '46-60', child: Text('46-60 anos')),
-            DropdownMenuItem(value: '61+', child: Text('61+ anos')),
-          ],
-          onChanged: (value) => registrationData.ageRange = value ?? registrationData.ageRange,
+          readOnly: true,
+          onTap: () => _selectDate(context),
         ),
       ],
     );
@@ -229,9 +274,10 @@ class RegisterScreen extends StatelessWidget {
   }
 
   Widget _buildCreateAccountButton(BuildContext context) {
-    final registrationData = Provider.of<RegistrationData>(context, listen: false);
+    final registrationData =
+        Provider.of<RegistrationData>(context, listen: false);
     final userController = Provider.of<UserController>(context);
-    
+
     return userController.isLoading
         ? const CircularProgressIndicator()
         : MainButton(
@@ -239,18 +285,20 @@ class RegisterScreen extends StatelessWidget {
             onPressed: () async {
               // Validar e enviar os dados para registro
               if (_validateRegistration(registrationData, context)) {
-                final success = await userController.registerUser(registrationData);
-                
+                final success =
+                    await userController.registerUser(registrationData);
+
                 if (success && context.mounted) {
                   Navigator.pushReplacementNamed(context, '/home');
-                } else if (userController.errorMessage != null && context.mounted) {
+                } else if (userController.errorMessage != null &&
+                    context.mounted) {
                   _showValidationError(context, userController.errorMessage!);
                 }
               }
             },
           );
   }
-  
+
   // Método para validar os dados de registro
   bool _validateRegistration(RegistrationData data, BuildContext context) {
     if (data.userType.isEmpty) {
@@ -261,8 +309,8 @@ class RegisterScreen extends StatelessWidget {
       _showValidationError(context, 'Nome é obrigatório');
       return false;
     }
-    if (data.ageRange.isEmpty) {
-      _showValidationError(context, 'Faixa etária é obrigatória');
+    if (_birthDate == null || data.ageRange.isEmpty) {
+      _showValidationError(context, 'Data de nascimento é obrigatória');
       return false;
     }
     if (data.email.isEmpty || !data.email.contains('@')) {
@@ -279,7 +327,7 @@ class RegisterScreen extends StatelessWidget {
     }
     return true;
   }
-  
+
   void _showValidationError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
