@@ -96,7 +96,7 @@ class MyApp extends StatelessWidget {
         '/frases': (context) => const MotivationalPage(),
         '/consulta': (context) => const ConsultaPage(),
         '/complete-profile': (context) => const CompleteProfilePage(),
-        '/gamification': (context) => const GamificationPage(), // ← Nova rota
+        '/gamification': (context) => const GamificationPage(),
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(builder: (context) => const WelcomePage());

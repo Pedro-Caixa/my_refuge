@@ -47,6 +47,82 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _showDevPanel(BuildContext context, UserController userController) {
+    final emailController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.developer_board, color: Colors.teal),
+              SizedBox(width: 8),
+              Text('Painel Dev'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Digite o email do usuário para promover a Admin:',
+                style: TextStyle(fontSize: 14),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email do usuário',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              SizedBox(height: 16),
+              Text(
+                '⚠️ Apenas desenvolvedores podem promover usuários',
+                style: TextStyle(fontSize: 12, color: Colors.orange),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (emailController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Digite um email válido')),
+                  );
+                  return;
+                }
+                
+                Navigator.of(context).pop();
+                
+                final success = await userController.promoteUserToAdmin(emailController.text.trim());
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Usuário promovido a admin com sucesso!')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro: ${userController.errorMessage}')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+              child: Text('Promover a Admin'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userController = Provider.of<UserController>(context);
@@ -195,14 +271,53 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 24),
 
-              if (userController.isAdmin) ...[
+              if (!userController.isAdmin && userController.currentUser?.email == "marquinhotavares03@gmail.com") ...[
+                Card(
+                  color: Colors.orange[50],
+                  child: ListTile(
+                    leading: Icon(Icons.admin_panel_settings, color: Colors.orange),
+                    title: Text('Promover a Admin'),
+                    subtitle: Text('Clique para se tornar administrador'),
+                    onTap: () async {
+                      final success = await userController.promoteCurrentUserToAdmin();
+                      if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Promovido a admin com sucesso!')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Erro: ${userController.errorMessage}')),
+                        );
+                      }
+                    },
+                  ),
+                ),    
+                const SizedBox(height: 16),
+              ],
+
+              if (userController.isAdmin || userController.isDev) ...[
                 OptionCard(
                   icon: Icons.dashboard,
                   iconColor: Colors.purple,
                   title: "Dashboard Admin",
                   subtitle: "Acesse o painel administrativo",
+                  backgroundColor: const Color.fromARGB(255, 219, 119, 236),
                   onTap: () {
                     Navigator.pushNamed(context, '/home');
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              if (userController.isDev) ...[
+                OptionCard(
+                  icon: Icons.developer_board,
+                  iconColor: Colors.teal,
+                  title: "Painel Dev",
+                  subtitle: "Gerencie usuários e promoções",
+                  backgroundColor: const Color.fromARGB(255, 146, 209, 203),
+                  onTap: () {
+                    _showDevPanel(context, userController);
                   },
                 ),
                 const SizedBox(height: 16),

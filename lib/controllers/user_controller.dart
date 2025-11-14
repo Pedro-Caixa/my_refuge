@@ -17,6 +17,7 @@ class UserController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _currentUser != null;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
+  bool get isDev => _currentUser?.isDev ?? false;
 
   UserController() {
     try {
@@ -106,6 +107,7 @@ class UserController extends ChangeNotifier {
       userData['isAnonymous'] = false;
       userData['dailyStreak'] = 0;
       userData['isAdmin'] = false;
+      userData['isDev'] = false;
 
       await _firestore
           .collection('users')
@@ -753,5 +755,104 @@ class UserController extends ChangeNotifier {
   void _clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  // Método temporário para testar promoção a admin
+  Future<bool> promoteCurrentUserToAdmin() async {
+    try {
+      if (_currentUser == null) {
+        _setError('Nenhum usuário logado');
+        return false;
+      }
+
+      _setLoading(true);
+      _clearError();
+
+      await _firestore.collection('users').doc(_currentUser!.uid).update({
+        'isAdmin': true,
+      });
+
+      _currentUser!.isAdmin = true;
+      notifyListeners();
+
+      print('Usuário ${_currentUser!.email} promovido a admin com sucesso!');
+      return true;
+    } catch (e) {
+      _setError('Erro ao promover usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  
+  Future<bool> promoteUserToAdmin(String email) async {
+    try {
+      if (!isDev) {
+        _setError('Apenas desenvolvedores podem promover usuários a admin');
+        return false;
+      }
+
+      _setLoading(true);
+      _clearError();
+
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        _setError('Usuário não encontrado');
+        return false;
+      }
+
+      final userDoc = querySnapshot.docs.first;
+      await _firestore.collection('users').doc(userDoc.id).update({
+        'isAdmin': true,
+      });
+
+      print('Usuário $email promovido a admin por ${_currentUser!.email}');
+      return true;
+    } catch (e) {
+      _setError('Erro ao promover usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> removeAdminFromUser(String email) async {
+    try {
+      if (!isDev) {
+        _setError('Apenas desenvolvedores podem remover admin de usuários');
+        return false;
+      }
+
+      _setLoading(true);
+      _clearError();
+
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        _setError('Usuário não encontrado');
+        return false;
+      }
+
+      final userDoc = querySnapshot.docs.first;
+      await _firestore.collection('users').doc(userDoc.id).update({
+        'isAdmin': false,
+      });
+
+      print('Admin removido do usuário $email por ${_currentUser!.email}');
+      return true;
+    } catch (e) {
+      _setError('Erro ao remover admin do usuário: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 }
