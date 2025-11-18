@@ -49,7 +49,7 @@ class _HomePageState extends State<HomePage> {
 
   void _showDevPanel(BuildContext context, UserController userController) {
     final emailController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -100,17 +100,21 @@ class _HomePageState extends State<HomePage> {
                   );
                   return;
                 }
-                
+
                 Navigator.of(context).pop();
-                
-                final success = await userController.promoteUserToAdmin(emailController.text.trim());
+
+                final success = await userController
+                    .promoteUserToAdmin(emailController.text.trim());
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Usuário promovido a admin com sucesso!')),
+                    SnackBar(
+                        content:
+                            Text('Usuário promovido a admin com sucesso!')),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro: ${userController.errorMessage}')),
+                    SnackBar(
+                        content: Text('Erro: ${userController.errorMessage}')),
                   );
                 }
               },
@@ -271,27 +275,34 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 24),
 
-              if (!userController.isAdmin && userController.currentUser?.email == "marquinhotavares03@gmail.com") ...[
+              if (!userController.isAdmin &&
+                  userController.currentUser?.email ==
+                      "marquinhotavares03@gmail.com") ...[
                 Card(
                   color: Colors.orange[50],
                   child: ListTile(
-                    leading: Icon(Icons.admin_panel_settings, color: Colors.orange),
+                    leading:
+                        Icon(Icons.admin_panel_settings, color: Colors.orange),
                     title: Text('Promover a Admin'),
                     subtitle: Text('Clique para se tornar administrador'),
                     onTap: () async {
-                      final success = await userController.promoteCurrentUserToAdmin();
+                      final success =
+                          await userController.promoteCurrentUserToAdmin();
                       if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Promovido a admin com sucesso!')),
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text('Promovido a admin com sucesso!')),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Erro: ${userController.errorMessage}')),
+                          SnackBar(
+                              content:
+                                  Text('Erro: ${userController.errorMessage}')),
                         );
                       }
                     },
                   ),
-                ),    
+                ),
                 const SizedBox(height: 16),
               ],
 
@@ -303,7 +314,7 @@ class _HomePageState extends State<HomePage> {
                   subtitle: "Acesse o painel administrativo",
                   backgroundColor: const Color.fromARGB(255, 219, 119, 236),
                   onTap: () {
-                    Navigator.pushNamed(context, '/home');
+                    Navigator.pushNamed(context, '/admin');
                   },
                 ),
                 const SizedBox(height: 16),

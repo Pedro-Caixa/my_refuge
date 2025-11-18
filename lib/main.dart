@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'views/pages/welcome_page.dart';
 import 'views/pages/register_page.dart';
+import 'views/pages/admin_page.dart';
 import 'views/pages/home_page.dart';
 import 'views/pages/humor_page.dart';
 import 'views/pages/exercicios_page.dart';
@@ -96,7 +97,8 @@ class MyApp extends StatelessWidget {
         '/frases': (context) => const MotivationalPage(),
         '/consulta': (context) => const ConsultaPage(),
         '/complete-profile': (context) => const CompleteProfilePage(),
-        '/gamification': (context) => const GamificationPage(),
+        '/gamification': (context) => const GamificationPage(), // ← Nova rota
+        '/admin': (context) => const AdminReportsScreen(),
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(builder: (context) => const WelcomePage());

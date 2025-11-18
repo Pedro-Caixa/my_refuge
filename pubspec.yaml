@@ -37,6 +37,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   url_launcher: ^6.1.7
   flutter_dotenv: ^6.0.0
+  fl_chart: ^0.70.0
+
+
   
 
 dev_dependencies:
