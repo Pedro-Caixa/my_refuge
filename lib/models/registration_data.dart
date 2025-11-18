@@ -16,6 +16,7 @@ class RegistrationData extends ChangeNotifier {
   int _dailyStreak = 0;
   bool _isAnonymous = false;
   bool _isAdmin = false;
+  bool _isDev = false;
   String _uid = '';
 
   String get email => _email;
@@ -138,6 +139,14 @@ class RegistrationData extends ChangeNotifier {
     }
   }
 
+  bool get isDev => _isDev;
+  set isDev(bool value) {
+    if (_isDev != value) {
+      _isDev = value;
+      notifyListeners();
+    }
+  }
+
   String get uid => _uid;
   set uid(String value) {
     if (_uid != value) {
@@ -171,6 +180,7 @@ class RegistrationData extends ChangeNotifier {
       'dailyStreak': _dailyStreak,
       'isAnonymous': _isAnonymous,
       'isAdmin': _isAdmin,
+      'isDev': _isDev,
     };
   }
 
@@ -190,6 +200,7 @@ class RegistrationData extends ChangeNotifier {
       ..dailyStreak = map['dailyStreak'] ?? 0
       ..isAnonymous = map['isAnonymous'] ?? false
       ..isAdmin = map['isAdmin'] ?? false
+      ..isDev = map['isDev'] ?? false
       ..uid = uid;
     return data;
   }

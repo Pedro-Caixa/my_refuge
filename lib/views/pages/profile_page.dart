@@ -29,10 +29,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   late TextEditingController _hobbiesController;
   late TextEditingController _passwordController;
   late TextEditingController _confirmPasswordController;
+  late TextEditingController _dateController;
 
   // Valores dos dropdowns
   String? _selectedUserType;
-  String? _selectedAgeRange;
+  DateTime? _birthDate;
   String? _selectedLivesAlone;
   String? _selectedGender;
   bool _receivesNotifications = true;
@@ -52,6 +53,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     _hobbiesController = TextEditingController();
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
+    _dateController = TextEditingController();
   }
 
   void _loadUserData() {
@@ -66,10 +68,51 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         _availableTimeController.text = user.availableTime ?? '';
         _hobbiesController.text = user.hobbies ?? '';
         _selectedUserType = user.userType.isNotEmpty ? user.userType : null;
-        _selectedAgeRange = user.ageRange.isNotEmpty ? user.ageRange : null;
+
+        // Tenta carregar a data de nascimento se estiver no formato ISO
+        if (user.ageRange.isNotEmpty) {
+          try {
+            _birthDate = DateTime.parse(user.ageRange);
+            _dateController.text =
+                '${_birthDate!.day.toString().padLeft(2, '0')}/${_birthDate!.month.toString().padLeft(2, '0')}/${_birthDate!.year}';
+          } catch (e) {
+            // Se não for uma data válida, mantém vazio
+            _dateController.text = '';
+          }
+        }
+
         _selectedLivesAlone = user.livesAlone;
         _selectedGender = user.gender;
         _receivesNotifications = user.receivesNotifications;
+      });
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _birthDate ?? DateTime(2000),
+      firstDate: DateTime(1924),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Colors.deepPurple,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _birthDate) {
+      setState(() {
+        _birthDate = picked;
+        _dateController.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
       });
     }
   }
@@ -83,6 +126,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     _hobbiesController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _dateController.dispose();
     super.dispose();
   }
 
@@ -277,23 +321,19 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           ),
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
+        TextField(
+          controller: _dateController,
           decoration: InputDecoration(
-            labelText: "Faixa Etária *",
+            labelText: 'Data de Nascimento *',
+            hintText: 'DD/MM/AAAA',
             prefixIcon: const Icon(Icons.cake),
+            suffixIcon: const Icon(Icons.calendar_today),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          value: _selectedAgeRange,
-          items: const [
-            DropdownMenuItem(value: '18-25', child: Text('18-25 anos')),
-            DropdownMenuItem(value: '26-35', child: Text('26-35 anos')),
-            DropdownMenuItem(value: '36-45', child: Text('36-45 anos')),
-            DropdownMenuItem(value: '46-60', child: Text('46-60 anos')),
-            DropdownMenuItem(value: '61+', child: Text('61+ anos')),
-          ],
-          onChanged: (value) => setState(() => _selectedAgeRange = value),
+          readOnly: true,
+          onTap: () => _selectDate(context),
         ),
       ],
     );
@@ -511,7 +551,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     registrationData.password = _passwordController.text;
     registrationData.confirmPassword = _confirmPasswordController.text;
     registrationData.userType = _selectedUserType ?? '';
-    registrationData.ageRange = _selectedAgeRange ?? '';
+    registrationData.ageRange = _birthDate?.toIso8601String() ?? '';
     registrationData.profession = _professionController.text;
     registrationData.livesAlone = _selectedLivesAlone ?? '';
     registrationData.gender = _selectedGender ?? '';
@@ -553,8 +593,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       _showValidationError(context, 'Nome é obrigatório');
       return false;
     }
-    if (data.ageRange.isEmpty) {
-      _showValidationError(context, 'Faixa etária é obrigatória');
+    if (_birthDate == null || data.ageRange.isEmpty) {
+      _showValidationError(context, 'Data de nascimento é obrigatória');
       return false;
     }
     if (data.email.isEmpty || !data.email.contains('@')) {

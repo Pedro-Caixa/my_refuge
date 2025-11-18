@@ -6,6 +6,7 @@ class OptionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Color backgroundColor;
 
   const OptionCard({
     Key? key,
@@ -14,6 +15,7 @@ class OptionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.backgroundColor = Colors.white,
   }) : super(key: key);
 
   @override
@@ -24,7 +26,7 @@ class OptionCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
