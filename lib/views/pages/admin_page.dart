@@ -18,6 +18,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   List<FlSpot> checkinsData = [];
   List<BarChartGroupData> userGrowthData = [];
   List<PieChartSectionData> activitiesData = [];
+  Map<String, Color> categoryColors = {};
   bool isLoading = true;
 
   @override
@@ -57,27 +58,18 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       final totalCheckins = allCheckinsSnapshot.docs.length;
       print('✅ Total de check-ins: $totalCheckins');
 
-      // Check-ins hoje
-      final today = DateTime.now();
-      final startOfDay = DateTime(today.year, today.month, today.day);
-      final checkinsToday = await _firestore
-          .collection('checkins')
-          .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
-          .get();
-      print('✅ Check-ins hoje: ${checkinsToday.docs.length}');
-
       // Crescimento de usuários (últimos 30 dias)
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
       final recentUsersSnapshot = await _firestore
           .collection('users')
-          .where('createdAt', isGreaterThanOrEqualTo: thirtyDaysAgo)
+          .where('createdAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(thirtyDaysAgo))
           .get();
       print('✅ Novos usuários (30 dias): ${recentUsersSnapshot.docs.length}');
 
       summaryData = {
         'totalUsers': totalUsers.toString(),
         'totalCheckins': totalCheckins.toString(),
-        'checkinsToday': checkinsToday.docs.length.toString(),
         'newUsers': recentUsersSnapshot.docs.length.toString(),
       };
 
@@ -96,20 +88,26 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       for (int i = 0; i < days; i++) {
         final date = DateTime.now().subtract(Duration(days: days - 1 - i));
         final startOfDay = DateTime(date.year, date.month, date.day);
-        final endOfDay = startOfDay.add(const Duration(days: 1));
+        final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+        print(
+            '📅 Buscando check-ins do dia ${date.day}/${date.month}/${date.year}');
 
         final snapshot = await _firestore
             .collection('checkins')
-            .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
-            .where('timestamp', isLessThan: endOfDay)
+            .where('date',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+            .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
             .get();
 
         data.add(FlSpot(i.toDouble(), snapshot.docs.length.toDouble()));
-        print('📅 Dia ${i + 1}: ${snapshot.docs.length} check-ins');
+        print('   📊 ${snapshot.docs.length} check-ins encontrados');
       }
 
       checkinsData = data;
       print('✅ Check-ins carregados: ${data.length} dias');
+      print(
+          '   Total de check-ins no período: ${data.fold(0.0, (sum, spot) => sum + spot.y)}');
     } catch (e) {
       print('❌ Erro ao carregar check-ins: $e');
     }
@@ -117,18 +115,26 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
 
   Future<void> _loadUserGrowthData() async {
     try {
-      final months = 6;
+      print('🔄 Carregando crescimento de usuários...');
+      final months = 12;
       final data = <BarChartGroupData>[];
+      final now = DateTime.now();
 
       for (int i = 0; i < months; i++) {
-        final now = DateTime.now();
-        final monthStart = DateTime(now.year, now.month - (months - 1 - i), 1);
-        final monthEnd = DateTime(now.year, now.month - (months - 2 - i), 1);
+        // Calcular o mês correto (de 11 meses atrás até o mês atual)
+        final monthsAgo = months - 1 - i;
+        final targetDate = DateTime(now.year, now.month - monthsAgo, 1);
+
+        final monthStart = DateTime(targetDate.year, targetDate.month, 1);
+        final monthEnd = DateTime(targetDate.year, targetDate.month + 1, 1);
+
+        print('📅 Buscando usuários de ${monthStart.month}/${monthStart.year}');
 
         final snapshot = await _firestore
             .collection('users')
-            .where('createdAt', isGreaterThanOrEqualTo: monthStart)
-            .where('createdAt', isLessThan: monthEnd)
+            .where('createdAt',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart))
+            .where('createdAt', isLessThan: Timestamp.fromDate(monthEnd))
             .get();
 
         data.add(
@@ -139,47 +145,74 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                 toY: snapshot.docs.length.toDouble(),
                 color: Colors.blue[700],
                 width: 20,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(4),
+                ),
               )
             ],
           ),
         );
+        print('   📊 ${snapshot.docs.length} novos usuários');
       }
 
       userGrowthData = data;
+      print('✅ Crescimento carregado: 12 meses');
     } catch (e) {
-      print('Erro ao carregar crescimento: $e');
+      print('❌ Erro ao carregar crescimento: $e');
     }
   }
 
   Future<void> _loadActivitiesDistribution() async {
     try {
+      print('🔄 Carregando distribuição de atividades...');
       final snapshot = await _firestore.collection('checkins').get();
+
+      if (snapshot.docs.isEmpty) {
+        print('⚠️ Nenhum check-in encontrado');
+        return;
+      }
 
       // Contar por categoria
       final Map<String, int> categoryCounts = {};
       for (var doc in snapshot.docs) {
-        final category = doc.data()['category'] as String? ?? 'Outros';
+        final data = doc.data();
+        final category = data['category'] as String? ?? 'Outros';
         categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
       }
 
+      print('✅ Total de categorias: ${categoryCounts.length}');
+      categoryCounts.forEach((category, count) {
+        print('   - $category: $count check-ins');
+      });
+
       final total = snapshot.docs.length.toDouble();
-      final colors = [
+      final availableColors = [
         Colors.blue[700]!,
         Colors.green[600]!,
         Colors.orange[600]!,
         Colors.purple[600]!,
+        Colors.red[600]!,
+        Colors.teal[600]!,
+        Colors.pink[600]!,
+        Colors.indigo[600]!,
       ];
 
       final data = <PieChartSectionData>[];
+      categoryColors.clear();
       int colorIndex = 0;
 
       categoryCounts.forEach((category, count) {
         final percentage = (count / total * 100);
+        final color = availableColors[colorIndex % availableColors.length];
+
+        categoryColors[category] = color;
+
         data.add(
           PieChartSectionData(
             value: percentage,
             title: '${percentage.toStringAsFixed(0)}%',
-            color: colors[colorIndex % colors.length],
+            color: color,
             radius: 60,
             titleStyle: const TextStyle(
               fontSize: 14,
@@ -192,8 +225,9 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       });
 
       activitiesData = data;
+      print('✅ Distribuição carregada com ${data.length} categorias');
     } catch (e) {
-      print('Erro ao carregar distribuição: $e');
+      print('❌ Erro ao carregar distribuição: $e');
     }
   }
 
@@ -313,11 +347,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Cards de Resumo
+                              // Cards de Resumo (3 cards agora)
                               GridView.count(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 2,
+                                crossAxisCount: 3,
                                 childAspectRatio: 1.5,
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
@@ -329,16 +363,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                                     Colors.blue,
                                   ),
                                   _buildSummaryCard(
-                                    'Check-ins Feitos',
+                                    'Total de Check-ins',
                                     summaryData['totalCheckins'] ?? '0',
                                     Icons.check_circle,
                                     Colors.green,
-                                  ),
-                                  _buildSummaryCard(
-                                    'Check-ins Hoje',
-                                    summaryData['checkinsToday'] ?? '0',
-                                    Icons.today,
-                                    Colors.orange,
                                   ),
                                   _buildSummaryCard(
                                     'Crescimento (30d)',
@@ -362,7 +390,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                               // Gráfico de Crescimento de Usuários
                               if (userGrowthData.isNotEmpty)
                                 _buildChartCard(
-                                  'Crescimento de Usuários',
+                                  'Crescimento de Usuários (12 meses)',
                                   _buildBarChart(),
                                   300,
                                 ),
@@ -371,7 +399,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                               // Gráfico de Distribuição por Categoria
                               if (activitiesData.isNotEmpty)
                                 _buildChartCard(
-                                  'Distribuição de Atividades',
+                                  'Distribuição de Humor',
                                   _buildPieChart(),
                                   350,
                                 ),
@@ -432,6 +460,15 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 _buildMenuItem(
+                  icon: Icons.home,
+                  label: 'Voltar ao Início',
+                  isSelected: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/home');
+                  },
+                ),
+                const Divider(height: 16),
+                _buildMenuItem(
                   icon: Icons.dashboard,
                   label: 'Relatórios',
                   isSelected: true,
@@ -442,12 +479,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                   label: 'Cadastrar Exercício',
                   isSelected: false,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterExerciseScreen(),
-                      ),
-                    );
+                    Navigator.pushNamed(context, '/register-exercise');
                   },
                 ),
               ],
@@ -703,15 +735,34 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
-                if (value.toInt() >= 0 && value.toInt() < months.length) {
+                final now = DateTime.now();
+                final monthsAgo = 11 - value.toInt();
+                final targetDate = DateTime(now.year, now.month - monthsAgo, 1);
+
+                const months = [
+                  'Jan',
+                  'Fev',
+                  'Mar',
+                  'Abr',
+                  'Mai',
+                  'Jun',
+                  'Jul',
+                  'Ago',
+                  'Set',
+                  'Out',
+                  'Nov',
+                  'Dez'
+                ];
+
+                final monthIndex = targetDate.month - 1;
+                if (monthIndex >= 0 && monthIndex < months.length) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      months[value.toInt()],
+                      months[monthIndex],
                       style: TextStyle(
                         color: Colors.grey[600],
-                        fontSize: 12,
+                        fontSize: 10,
                       ),
                     ),
                   );
@@ -765,296 +816,14 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   }
 
   Widget _buildLegend() {
-    final categories = ['Fitness', 'Yoga', 'Corrida', 'Natação'];
-    final colors = [
-      Colors.blue[700]!,
-      Colors.green[600]!,
-      Colors.orange[600]!,
-      Colors.purple[600]!,
-    ];
+    if (categoryColors.isEmpty) return const SizedBox();
 
     return Wrap(
       spacing: 16,
       runSpacing: 8,
-      children: List.generate(
-        categories.length,
-        (index) => _buildLegendItem(categories[index], colors[index]),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey[700],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Tela de Cadastro de Exercício
-class RegisterExerciseScreen extends StatefulWidget {
-  const RegisterExerciseScreen({Key? key}) : super(key: key);
-
-  @override
-  State<RegisterExerciseScreen> createState() => _RegisterExerciseScreenState();
-}
-
-class _RegisterExerciseScreenState extends State<RegisterExerciseScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _categoryController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _categoryController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveExercise() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-
-      try {
-        await _firestore.collection('exercises').add({
-          'name': _nameController.text,
-          'category': _categoryController.text,
-          'description': _descriptionController.text,
-          'createdAt': Timestamp.now(),
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Exercício cadastrado com sucesso!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao cadastrar: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } finally {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Cadastrar Exercício'),
-        backgroundColor: Colors.blue[700],
-        elevation: 0,
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 600),
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.fitness_center,
-                          color: Colors.blue[700], size: 32),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Novo Exercício',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Preencha os dados para cadastrar um novo exercício',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Nome do Exercício
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Nome do Exercício *',
-                      hintText: 'Ex: Flexão de braço',
-                      prefixIcon: const Icon(Icons.label),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, insira o nome do exercício';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Categoria
-                  TextFormField(
-                    controller: _categoryController,
-                    decoration: InputDecoration(
-                      labelText: 'Categoria *',
-                      hintText: 'Ex: Fitness, Yoga, Corrida, Natação',
-                      prefixIcon: const Icon(Icons.category),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, insira a categoria';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Descrição
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      labelText: 'Descrição',
-                      hintText: 'Descreva o exercício e como executá-lo',
-                      prefixIcon: const Icon(Icons.description),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Botões
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed:
-                              _isLoading ? null : () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text('Cancelar'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _saveExercise,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[700],
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Cadastrar',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegend() {
-    final categories = ['Fitness', 'Yoga', 'Corrida', 'Natação'];
-    final colors = [
-      Colors.blue[700]!,
-      Colors.green[600]!,
-      Colors.orange[600]!,
-      Colors.purple[600]!,
-    ];
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      children: List.generate(
-        categories.length,
-        (index) => _buildLegendItem(categories[index], colors[index]),
-      ),
+      children: categoryColors.entries
+          .map((entry) => _buildLegendItem(entry.key, entry.value))
+          .toList(),
     );
   }
 
