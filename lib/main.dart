@@ -16,6 +16,9 @@ import 'views/pages/profile_page.dart';
 import './views/pages/game_page.dart'; // ← Nova página de gamificação
 import 'models/registration_data.dart';
 import 'controllers/user_controller.dart';
+import 'package:my_refuge/views/pages/register-exercise.dart';
+import './views/pages/register_frase.dart';
+import 'package:my_refuge/views/pages/register-exercise.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,6 +102,9 @@ class MyApp extends StatelessWidget {
         '/complete-profile': (context) => const CompleteProfilePage(),
         '/gamification': (context) => const GamificationPage(), // ← Nova rota
         '/admin': (context) => const AdminReportsScreen(),
+        '/register-phrase': (context) => const RegisterPhraseScreen(),
+        '/register-frase': (context) => RegisterPhraseScreen(),
+        '/register-exercise': (context) => const RegisterExerciseScreen(),
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(builder: (context) => const WelcomePage());

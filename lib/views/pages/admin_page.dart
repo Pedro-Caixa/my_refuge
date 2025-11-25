@@ -18,7 +18,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   List<FlSpot> checkinsData = [];
   List<BarChartGroupData> userGrowthData = [];
   List<PieChartSectionData> activitiesData = [];
-  Map<String, Color> categoryColors = {};
+  Map<String, Color> categoryColors = {}; // Para armazenar categorias e cores
   bool isLoading = true;
 
   @override
@@ -58,18 +58,27 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       final totalCheckins = allCheckinsSnapshot.docs.length;
       print('✅ Total de check-ins: $totalCheckins');
 
+      // Check-ins hoje
+      final today = DateTime.now();
+      final startOfDay = DateTime(today.year, today.month, today.day);
+      final checkinsToday = await _firestore
+          .collection('checkins')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .get();
+      print('✅ Check-ins hoje: ${checkinsToday.docs.length}');
+
       // Crescimento de usuários (últimos 30 dias)
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
       final recentUsersSnapshot = await _firestore
           .collection('users')
-          .where('createdAt',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(thirtyDaysAgo))
+          .where('createdAt', isGreaterThanOrEqualTo: thirtyDaysAgo)
           .get();
       print('✅ Novos usuários (30 dias): ${recentUsersSnapshot.docs.length}');
 
       summaryData = {
         'totalUsers': totalUsers.toString(),
         'totalCheckins': totalCheckins.toString(),
+        'checkinsToday': checkinsToday.docs.length.toString(),
         'newUsers': recentUsersSnapshot.docs.length.toString(),
       };
 
@@ -88,26 +97,21 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       for (int i = 0; i < days; i++) {
         final date = DateTime.now().subtract(Duration(days: days - 1 - i));
         final startOfDay = DateTime(date.year, date.month, date.day);
-        final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
-
-        print(
-            '📅 Buscando check-ins do dia ${date.day}/${date.month}/${date.year}');
+        final endOfDay = startOfDay.add(const Duration(days: 1));
 
         final snapshot = await _firestore
             .collection('checkins')
             .where('date',
                 isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-            .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+            .where('date', isLessThan: Timestamp.fromDate(endOfDay))
             .get();
 
         data.add(FlSpot(i.toDouble(), snapshot.docs.length.toDouble()));
-        print('   📊 ${snapshot.docs.length} check-ins encontrados');
+        print('📅 Dia ${i + 1}: ${snapshot.docs.length} check-ins');
       }
 
       checkinsData = data;
       print('✅ Check-ins carregados: ${data.length} dias');
-      print(
-          '   Total de check-ins no período: ${data.fold(0.0, (sum, spot) => sum + spot.y)}');
     } catch (e) {
       print('❌ Erro ao carregar check-ins: $e');
     }
@@ -116,25 +120,18 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   Future<void> _loadUserGrowthData() async {
     try {
       print('🔄 Carregando crescimento de usuários...');
-      final months = 12;
+      final months = 12; // Alterado de 6 para 12 meses
       final data = <BarChartGroupData>[];
-      final now = DateTime.now();
 
       for (int i = 0; i < months; i++) {
-        // Calcular o mês correto (de 11 meses atrás até o mês atual)
-        final monthsAgo = months - 1 - i;
-        final targetDate = DateTime(now.year, now.month - monthsAgo, 1);
-
-        final monthStart = DateTime(targetDate.year, targetDate.month, 1);
-        final monthEnd = DateTime(targetDate.year, targetDate.month + 1, 1);
-
-        print('📅 Buscando usuários de ${monthStart.month}/${monthStart.year}');
+        final now = DateTime.now();
+        final monthStart = DateTime(now.year, now.month - (months - 1 - i), 1);
+        final monthEnd = DateTime(now.year, now.month - (months - 2 - i), 1);
 
         final snapshot = await _firestore
             .collection('users')
-            .where('createdAt',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart))
-            .where('createdAt', isLessThan: Timestamp.fromDate(monthEnd))
+            .where('createdAt', isGreaterThanOrEqualTo: monthStart)
+            .where('createdAt', isLessThan: monthEnd)
             .get();
 
         data.add(
@@ -145,15 +142,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                 toY: snapshot.docs.length.toDouble(),
                 color: Colors.blue[700],
                 width: 20,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(4),
-                  topRight: Radius.circular(4),
-                ),
               )
             ],
           ),
         );
-        print('   📊 ${snapshot.docs.length} novos usuários');
+        print('📊 Mês ${i + 1}: ${snapshot.docs.length} novos usuários');
       }
 
       userGrowthData = data;
@@ -179,6 +172,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         final data = doc.data();
         final category = data['category'] as String? ?? 'Outros';
         categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
+        print('📊 Categoria encontrada: $category');
       }
 
       print('✅ Total de categorias: ${categoryCounts.length}');
@@ -199,13 +193,14 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       ];
 
       final data = <PieChartSectionData>[];
-      categoryColors.clear();
+      categoryColors.clear(); // Limpar cores antigas
       int colorIndex = 0;
 
       categoryCounts.forEach((category, count) {
         final percentage = (count / total * 100);
         final color = availableColors[colorIndex % availableColors.length];
 
+        // Armazenar a categoria e sua cor
         categoryColors[category] = color;
 
         data.add(
@@ -347,11 +342,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Cards de Resumo (3 cards agora)
+                              // Cards de Resumo
                               GridView.count(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 3,
+                                crossAxisCount: 2,
                                 childAspectRatio: 1.5,
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
@@ -363,10 +358,16 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                                     Colors.blue,
                                   ),
                                   _buildSummaryCard(
-                                    'Total de Check-ins',
+                                    'Check-ins Feitos',
                                     summaryData['totalCheckins'] ?? '0',
                                     Icons.check_circle,
                                     Colors.green,
+                                  ),
+                                  _buildSummaryCard(
+                                    'Check-ins Hoje',
+                                    summaryData['checkinsToday'] ?? '0',
+                                    Icons.today,
+                                    Colors.orange,
                                   ),
                                   _buildSummaryCard(
                                     'Crescimento (30d)',
@@ -390,7 +391,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                               // Gráfico de Crescimento de Usuários
                               if (userGrowthData.isNotEmpty)
                                 _buildChartCard(
-                                  'Crescimento de Usuários (12 meses)',
+                                  'Crescimento de Usuários',
                                   _buildBarChart(),
                                   300,
                                 ),
@@ -480,6 +481,14 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                   isSelected: false,
                   onTap: () {
                     Navigator.pushNamed(context, '/register-exercise');
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.format_quote,
+                  label: 'Cadastrar Frase',
+                  isSelected: false,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/register-phrase');
                   },
                 ),
               ],
@@ -735,10 +744,6 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                final now = DateTime.now();
-                final monthsAgo = 11 - value.toInt();
-                final targetDate = DateTime(now.year, now.month - monthsAgo, 1);
-
                 const months = [
                   'Jan',
                   'Fev',
@@ -753,13 +758,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                   'Nov',
                   'Dez'
                 ];
-
-                final monthIndex = targetDate.month - 1;
-                if (monthIndex >= 0 && monthIndex < months.length) {
+                if (value.toInt() >= 0 && value.toInt() < months.length) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      months[monthIndex],
+                      months[value.toInt()],
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 10,

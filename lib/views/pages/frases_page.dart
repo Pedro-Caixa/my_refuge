@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../template/main_template.dart';
 import '../widgets/cards/daily_quote_card.dart';
 import '../widgets/cards/phrase_card.dart';
@@ -15,103 +16,112 @@ class MotivationalPage extends StatefulWidget {
 
 class _MotivationalPageState extends State<MotivationalPage> {
   final Random _random = Random();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Lista de frases motivacionais
-  final List<Map<String, String>> _quotes = [
-    {
-      'quote': 'Você é mais forte do que imagina e mais capaz do que acredita.',
-      'author': 'My Refuge'
-    },
-    {
-      'quote':
-          'A coragem não é a ausência do medo, mas a decisão de que algo é mais importante que o medo.',
-      'author': 'My Refuge'
-    },
-    {
-      'quote':
-          'Cada dia é uma nova página em branco. Escreva uma história linda.',
-      'author': 'My Refuge'
-    },
-    {
-      'quote':
-          'Sua jornada é única. Não compare seu progresso com o dos outros.',
-      'author': 'My Refuge'
-    },
-    {
-      'quote': 'Pequenos passos ainda são progresso. Continue caminhando.',
-      'author': 'My Refuge'
-    },
-    {
-      'quote': 'Você merece todo o amor e cuidado que oferece aos outros.',
-      'author': 'My Refuge'
-    },
-    {
-      'quote': 'A esperança é uma força poderosa. Nunca pare de acreditar.',
-      'author': 'My Refuge'
-    },
-    {
-      'quote': 'Seus sonhos são válidos. Não desista deles.',
-      'author': 'My Refuge'
-    },
-  ];
+  // Listas dinâmicas do Firestore
+  List<Map<String, dynamic>> _quotes = [];
+  List<Map<String, dynamic>> _recentPhrases = [];
 
-  // Lista de frases recentes com tags
-  final List<Map<String, dynamic>> _recentPhrases = [
-    {
-      'phrase':
-          'Você é mais forte do que imagina e mais capaz do que acredita.',
-      'tag': 'força',
-      'color': Colors.blue,
-    },
-    {
-      'phrase': 'Cada pequeno passo em direção ao autocuidado é uma vitória.',
-      'tag': 'autocuidado',
-      'color': Colors.green,
-    },
-    {
-      'phrase':
-          'Suas emoções são válidas. Permita-se senti-las sem julgamento.',
-      'tag': 'aceitação',
-      'color': Colors.teal,
-    },
-    {
-      'phrase': 'O progresso não é linear. Cada dia é uma nova oportunidade.',
-      'tag': 'progresso',
-      'color': Colors.orange,
-    },
-    {
-      'phrase': 'Respire fundo. Você está fazendo o melhor que pode.',
-      'tag': 'calma',
-      'color': Colors.purple,
-    },
-    {
-      'phrase': 'Sua saúde mental importa. Cuide dela com carinho.',
-      'tag': 'saúde mental',
-      'color': Colors.pink,
-    },
-    {
-      'phrase': 'Seja gentil consigo mesmo. Você está aprendendo e crescendo.',
-      'tag': 'gentileza',
-      'color': Colors.amber,
-    },
-    {
-      'phrase': 'Não há problema em pedir ajuda. Isso é sinal de força.',
-      'tag': 'apoio',
-      'color': Colors.indigo,
-    },
-  ];
+  bool _isLoadingQuotes = true;
+  bool _isLoadingPhrases = true;
 
-  int _currentQuoteIndex = 0;
+  Map<String, dynamic>? _currentQuote;
   late int _currentTipIndex;
 
   @override
   void initState() {
     super.initState();
-    // Seleciona uma dica aleatória ao iniciar
     _currentTipIndex = _random.nextInt(_wellnessTips.length);
+    _loadQuotes();
+    _loadRecentPhrases();
   }
 
-  // Lista de dicas de bem-estar
+  Future<void> _loadQuotes() async {
+    try {
+      setState(() => _isLoadingQuotes = true);
+
+      // ✅ SEM ÍNDICE: Apenas ordenar, filtrar depois no código
+      final snapshot = await _firestore
+          .collection('phrases')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      // Filtrar isActive no código
+      final quotes = snapshot.docs.where((doc) {
+        final data = doc.data();
+        return data['isActive'] == true; // Filtra aqui
+      }).map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'quote': data['phrase'] ?? '',
+          'author': data['author'] ?? 'My Refuge',
+          'tag': data['tag'] ?? '',
+          'colorValue': data['colorValue'] ?? Colors.blue.value,
+        };
+      }).toList();
+
+      setState(() {
+        _quotes = quotes;
+        _isLoadingQuotes = false;
+
+        // Seleciona uma frase aleatória
+        if (_quotes.isNotEmpty) {
+          _currentQuote = _quotes[_random.nextInt(_quotes.length)];
+        }
+      });
+
+      print('✅ ${quotes.length} frases carregadas');
+    } catch (e) {
+      print('❌ Erro ao carregar frases: $e');
+      setState(() => _isLoadingQuotes = false);
+    }
+  }
+
+  Future<void> _loadRecentPhrases() async {
+    try {
+      setState(() => _isLoadingPhrases = true);
+
+      // ✅ SEM ÍNDICE: Buscar mais docs e filtrar no código
+      final snapshot = await _firestore
+          .collection('phrases')
+          .orderBy('createdAt', descending: true)
+          .limit(20) // Busca mais para compensar filtro
+          .get();
+
+      // Filtrar isActive e pegar apenas 8
+      final phrases = snapshot.docs
+          .where((doc) {
+            final data = doc.data();
+            return data['isActive'] == true;
+          })
+          .take(8) // Pega apenas 8 após filtrar
+          .map((doc) {
+            final data = doc.data();
+            final colorValue = data['colorValue'] as int? ?? Colors.blue.value;
+
+            return {
+              'id': doc.id,
+              'phrase': data['phrase'] ?? '',
+              'tag': data['tag'] ?? '',
+              'color': Color(colorValue),
+            };
+          })
+          .toList();
+
+      setState(() {
+        _recentPhrases = phrases;
+        _isLoadingPhrases = false;
+      });
+
+      print('✅ ${phrases.length} frases recentes carregadas');
+    } catch (e) {
+      print('❌ Erro ao carregar frases recentes: $e');
+      setState(() => _isLoadingPhrases = false);
+    }
+  }
+
+  // Lista de dicas de bem-estar (mantida local)
   final List<Map<String, String>> _wellnessTips = [
     {
       'title': 'Dica de Bem-estar',
@@ -155,20 +165,37 @@ class _MotivationalPageState extends State<MotivationalPage> {
     },
   ];
 
-  // Método para gerar uma nova frase
   void _handleNewQuote() {
-    setState(() {
-      int newIndex;
-      do {
-        newIndex = _random.nextInt(_quotes.length);
-      } while (newIndex == _currentQuoteIndex && _quotes.length > 1);
+    if (_quotes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Nenhuma frase disponível. Cadastre frases no painel admin!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
 
-      _currentQuoteIndex = newIndex;
+    setState(() {
+      Map<String, dynamic>? newQuote;
+
+      // Seleciona uma frase diferente da atual
+      if (_quotes.length > 1) {
+        do {
+          newQuote = _quotes[_random.nextInt(_quotes.length)];
+        } while (newQuote?['id'] == _currentQuote?['id']);
+      } else {
+        newQuote = _quotes[0];
+      }
+
+      _currentQuote = newQuote;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Nova frase gerada!'),
+        content: Text('✨ Nova frase gerada!'),
         backgroundColor: Colors.deepPurple,
         duration: Duration(seconds: 2),
       ),
@@ -177,7 +204,7 @@ class _MotivationalPageState extends State<MotivationalPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Seleciona 4 frases aleatórias para exibir (ou menos se a lista for menor)
+    // Seleciona 4 frases aleatórias para exibir
     final displayPhrases = _recentPhrases.length <= 4
         ? _recentPhrases
         : (_recentPhrases..shuffle()).take(4).toList();
@@ -191,38 +218,142 @@ class _MotivationalPageState extends State<MotivationalPage> {
         currentIndex: 3,
         onItemTapped: (int index) {},
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Inspiração para o seu dia",
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            DailyQuoteCard(
-              quote: _quotes[_currentQuoteIndex]['quote']!,
-              author: _quotes[_currentQuoteIndex]['author']!,
-              onNewQuote: _handleNewQuote,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              "Frases Recentes",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...displayPhrases.map((phraseData) => PhraseCard(
-                  phrase: phraseData['phrase'] as String,
-                  tag: phraseData['tag'] as String,
-                  tagColor: phraseData['color'] as Color,
-                )),
-            const SizedBox(height: 24),
-            WellnessTipCard(
-              title: _wellnessTips[_currentTipIndex]['title']!,
-              content: _wellnessTips[_currentTipIndex]['content']!,
-            ),
-          ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await Future.wait([
+            _loadQuotes(),
+            _loadRecentPhrases(),
+          ]);
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Inspiração para o seu dia",
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
+
+              // Card da frase do dia
+              _isLoadingQuotes
+                  ? Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : _currentQuote == null || _quotes.isEmpty
+                      ? Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.format_quote,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Nenhuma frase cadastrada',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Cadastre frases no painel admin',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : DailyQuoteCard(
+                          quote: _currentQuote!['quote'] as String,
+                          author: _currentQuote!['author'] as String,
+                          onNewQuote: _handleNewQuote,
+                        ),
+
+              const SizedBox(height: 24),
+
+              // Frases Recentes
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Frases Recentes",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  if (!_isLoadingPhrases && _recentPhrases.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: _loadRecentPhrases,
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Atualizar'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.deepPurple,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              _isLoadingPhrases
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : displayPhrases.isEmpty
+                      ? Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Nenhuma frase recente',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: displayPhrases.map((phraseData) {
+                            return PhraseCard(
+                              phrase: phraseData['phrase'] as String,
+                              tag: phraseData['tag'] as String,
+                              tagColor: phraseData['color'] as Color,
+                            );
+                          }).toList(),
+                        ),
+
+              const SizedBox(height: 24),
+
+              // Dica de Bem-estar
+              WellnessTipCard(
+                title: _wellnessTips[_currentTipIndex]['title']!,
+                content: _wellnessTips[_currentTipIndex]['content']!,
+              ),
+            ],
+          ),
         ),
       ),
     );
